@@ -25,6 +25,8 @@
 
 Працює офлайн-як-можливо: один HTTPS-запит до [OpenRouter](https://openrouter.ai) (десятки моделей через єдиний акаунт — GPT-4o, Claude, Gemini, Llama, etc), решта — локально. Native .NET 8 / WPF, без браузера, без Electron. Сидить у системному треї і прокидається тільки на ваш хоткей. Розповсюджується як один self-contained `.exe` інсталятор (~71 MB).
 
+**Free та Pro.** Цей репозиторій — безкоштовне відкрите ядро CapyBro під ліцензією MIT; усе описане в цьому README доступне безкоштовно. Окремо існує **CapyBro Pro** — преміум-набори промптів, експорт історії, хоткей перемикання моделей і статистика використання; одноразова покупка $19 (без підписки) на [capybro.app](https://capybro.app).
+
 > **Чому "CapyBro"?** Капібара — найхалявніша і найдружніша тварина. Вона нікуди не поспішає, всім допомагає, і ладнає з усіма. Утиліта, яка тихо сидить поруч і робить нудну роботу замість вас — саме той вайб.
 
 ---
@@ -151,7 +153,7 @@ CapyBro v2.0 (config schema v15) підтримує два бекенди — п
 
 ### Скачати
 
-Скачайте останній реліз з [GitHub Releases](https://github.com/phantasmat2018/capy-bro/releases) — файл `CapyBro-Setup-2.0.0.exe` (~74 MB).
+Скачайте останній реліз з [GitHub Releases](https://github.com/phantasmat2018/capy-bro/releases) — файл `CapyBro-Setup-2.0.0.exe` (~71 MB).
 
 Або зайдіть на [capybro.app](https://capybro.app) — там завжди свіже посилання.
 
@@ -324,7 +326,6 @@ dotnet test                         # 596/596 regression tests
 - **Не запускайте `dotnet build` поки `CapyBro.exe` у треї** — DLL заблокована running процесом. Перед збіркою: `taskkill /F /IM CapyBro.exe /IM testhost.exe /IM dotnet.exe`.
 - **InternalsVisibleTo для тестів** — `CapyBro.Tests` має доступ до internal-методів через атрибут у csproj. Не треба reflection для тестування приватного.
 - **Translator parity invariant** — будь-який новий ключ перекладу мусить бути в усіх 3 локалях (UA/RU/EN), інакше `TranslatorParityTests` падає.
-- Детальніше про "gotchas" — у `CLAUDE.md` у корені (там же — workflow worktree-патернів).
 
 ---
 
@@ -373,9 +374,7 @@ capy-bro/
 ├── docs/screenshots/
 ├── assets/                     # logo.ico, logo.png, header.png (бренд-композиція)
 ├── scripts/                    # release.ps1, png-to-ico.ps1, etc.
-├── PROMPT.md                   # original project brief (для майбутніх rewrite'ів)
-├── README.md                   # цей файл
-└── CLAUDE.md                   # AI session context (campaign progress, gotchas)
+└── README.md                   # цей файл
 ```
 
 ---
@@ -421,11 +420,10 @@ capy-bro/
 
 Цей проєкт **повністю розроблений через [Claude Code](https://docs.claude.com/en/docs/claude-code/overview)** (Anthropic's CLI agent). Жодного коду не написано вручну — все згенеровано через діалог з агентом. Workflow:
 
-1. Початковий brief — `PROMPT.md` (43 KB, описує всю архітектуру v2 з нуля).
-2. Iterative development у git worktrees під `.claude/worktrees/<name>/`.
+1. Розгорнутий початковий brief описував усю архітектуру v2 з нуля.
+2. Iterative development у git worktrees — кожна задача в окремій гілці.
 3. Кожен фікс — окремий комміт + регресійний тест.
 4. Quality gate (`dotnet format` + `build /warnaserror` + `test`) автоматично перед кожним коммітом.
-5. Для майбутніх сесій — див. `CLAUDE.md` у корені (campaign-specific gotchas, build commands, project state).
 
 Жодного IDE не потрібно — Claude Code сам читає/пише файли через інструменти, перегляд через `git diff`. Цей README, всі тести, всі коміти, brand-design, документація — все згенеровано в діалоговому режимі.
 
@@ -477,9 +475,9 @@ capy-bro/
 
 ## 📜 Ліцензія
 
-Naming TBD — поки що **All Rights Reserved**, але плануємо перейти на permissive (MIT або Apache-2.0) як тільки буде зафіксована позиція по trademark/brand.
+Код у цьому репозиторії — під ліцензією **MIT** (див. файл [`LICENSE`](LICENSE)): вільне використання, зміна та поширення, зокрема комерційне.
 
-Якщо вам потрібно щось специфічне з кодом для свого проєкту — пишіть, домовимось.
+Назва й логотип «CapyBro», а також функції версії Pro — не входять у MIT-ліцензію.
 
 ---
 
