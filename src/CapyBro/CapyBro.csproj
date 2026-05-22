@@ -90,8 +90,6 @@
     (App.LoadEmbeddedTrayIcon), and Win shortcuts (installer.nsi).
     logo.png is bundled for in-XAML rendering on the onboarding wizard
     welcome page (square 96 × 96 mark).
-    header.png is the wide capybara + wordmark composition used on the
-    Settings sidebar header — pre-rendered to match marketing material.
   -->
   <ItemGroup>
     <Resource Include="..\..\assets\logo.ico">
@@ -99,9 +97,6 @@
     </Resource>
     <Resource Include="..\..\assets\logo.png">
       <Link>assets\logo.png</Link>
-    </Resource>
-    <Resource Include="..\..\assets\header.png">
-      <Link>assets\header.png</Link>
     </Resource>
   </ItemGroup>
 
