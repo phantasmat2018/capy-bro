@@ -370,7 +370,6 @@ capy-bro/
 │   ├── installer.nsi           # NSIS-script
 │   └── sign-installer.ps1      # Опціональний Authenticode signing wrapper
 ├── publish/win-x64/            # output: CapyBro.exe (~78 MB) — gitignored
-├── docs/screenshots/
 ├── assets/                     # logo.ico, logo.png
 ├── scripts/                    # release.ps1, png-to-ico.ps1, etc.
 └── README.md                   # цей файл
