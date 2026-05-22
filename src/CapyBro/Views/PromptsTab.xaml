@@ -1,0 +1,453 @@
+<UserControl x:Class="CapyBro.Views.PromptsTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:services="clr-namespace:CapyBro.Services">
+
+  <UserControl.Resources>
+    <!-- Built-in WPF converter; collapses (zero layout space) when bool is
+         false. Used to hide the per-prompt "Show diff preview" checkbox
+         when the master experimental flag is off — see PromptsTabViewModel
+         comment on IsDiffPreviewExperimentEnabled. -->
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+  </UserControl.Resources>
+
+  <!--
+    Phase E iteration 2: card layout, mirroring the General tab grouping
+    so both tabs read with the same visual language.
+
+    Two cards stacked vertically:
+      • Default-prompt card (Auto height) — "set which prompt is
+        invoked by the bare hotkey" — a single ComboBox.
+      • Prompts card (* height) — list + editor for adding /
+        editing / deleting custom prompts.  Editor TextBox fills
+        the remaining vertical space via a "*" RowDefinition
+        inside the editor sub-grid.
+
+    SectionCard / SectionAccentStrip styles live in
+    Themes/Cards.xaml (App.xaml MergedDictionaries).  Brand-accent
+    strips on each heading echo General-tab card affordances so a
+    user moving between tabs experiences a consistent grammar.
+  -->
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <!-- ==================== Default prompt card ==================== -->
+    <!-- Tells the app which prompt to use when the bare improvement
+         hotkey fires (no menu).  Standalone card because it owns a
+         distinct concern from "managing the prompt collection". -->
+    <Border Grid.Row="0" Style="{StaticResource SectionCard}" Margin="0,0,0,16">
+      <StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+          <Border Style="{StaticResource SectionAccentStrip}" />
+          <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[default_prompt]}"
+                     Style="{DynamicResource TypeH3}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+        <ComboBox Style="{StaticResource InputComboBox}"
+                  ItemsSource="{Binding ActiveKeys}"
+                  SelectedItem="{Binding DefaultPromptKey, Mode=TwoWay}" />
+      </StackPanel>
+    </Border>
+
+    <!-- ==================== Prompts list+editor card ==================== -->
+    <!-- The bigger card houses the full collection management:
+         left-side list of prompts, right-side editor for the
+         currently-selected one, plus the New / Delete actions.
+         DockPanel inside the card so the heading docks to the top
+         while the list+editor grid fills the remaining height. -->
+    <Border Grid.Row="1" Style="{StaticResource SectionCard}">
+      <DockPanel LastChildFill="True">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+          <Border Style="{StaticResource SectionAccentStrip}" />
+          <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[prompts_section]}"
+                     Style="{DynamicResource TypeH3}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <!-- 260-px list pane + 20-px gap mirrors HistoryTab so the two
+                 tabs read as siblings.  Earlier this was 300 / 16, which
+                 looked subtly off when the user toggled between tabs. -->
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <!--
+            ListBox + empty-state overlay layered in the same Grid cell.
+            When ActiveKeys is non-empty the ListBox renders its rows and
+            the empty-state StackPanel collapses (zero layout space) via
+            the ItemsControl-Items-Count DataTrigger; when ActiveKeys is
+            empty the ListBox renders no rows AND the StackPanel surfaces
+            a friendly "no prompts yet" hint.
+
+            ItemTemplate is a plain text row — see the DataTemplate
+            comment below for the rationale on dropping the
+            default-prompt indicator glyph.
+          -->
+          <Grid Grid.Column="0" Margin="0,0,20,0">
+            <!--
+              ScrollViewer.CanContentScroll="False" + IsVirtualizing="False"
+              switch the list to PIXEL-based scrolling.  Default WPF
+              ListBox uses item-based scrolling (one whole row per wheel
+              tick) which felt jerky here — user reported the motion
+              "moves in jumps" pre-fix.  The history list keeps
+              CanContentScroll=True because it uses GroupStyle (date
+              buckets) and needs virtualization to scroll at all; the
+              prompts list is flat + short so neither concern applies
+              and pixel scrolling reads as smooth.
+            -->
+            <ListBox x:Name="PromptsList"
+                     Style="{StaticResource ListListBox}"
+                     ItemsSource="{Binding ActiveKeys}"
+                     SelectedItem="{Binding SelectedKey, Mode=TwoWay}"
+                     ScrollViewer.CanContentScroll="False"
+                     VirtualizingStackPanel.IsVirtualizing="False">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <!--
+                    Plain single-line row.  Earlier iterations marked
+                    the DefaultPromptKey row with a BrandPrimary Check
+                    glyph in a 22-px left gutter; user feedback was
+                    that the blue tick was visually distracting in a
+                    list this short, so the indicator was removed
+                    entirely.  The default prompt is still surfaced
+                    via the right-pane "Default" badge / "Set as
+                    default" button — the row itself stays neutral.
+                  -->
+                  <TextBlock Text="{Binding}"
+                             VerticalAlignment="Center" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!--
+              Empty-state body.  IsHitTestVisible=False so the overlay
+              doesn't swallow clicks intended for the (empty) ListBox
+              underneath — the ListBox handles selection / keyboard nav
+              even with zero items, and intercepting hits would break
+              that.  Padding 24 keeps the icon + text away from the
+              edges so it doesn't hug the border.
+            -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="24"
+                        IsHitTestVisible="False">
+              <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding Items.Count, ElementName=PromptsList}" Value="0">
+                      <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </StackPanel.Style>
+
+              <!-- Generic Edit3 glyph (the same icon used for the Prompts
+                   sidebar tab) — a circle with a pencil/quill, recognisable
+                   as "writing".  Stroked with OnSurfaceMuted so the empty
+                   state reads as quiet/passive rather than an error. -->
+              <Path Data="{StaticResource Icon.Edit3}"
+                    Stroke="{DynamicResource OnSurfaceMutedBrush}"
+                    StrokeThickness="1.5"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"
+                    StrokeLineJoin="Round"
+                    Width="40" Height="40"
+                    Stretch="Uniform"
+                    HorizontalAlignment="Center" />
+
+              <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[empty_prompts_title]}"
+                         Style="{DynamicResource TypeBodyStrong}"
+                         HorizontalAlignment="Center"
+                         Margin="0,12,0,4" />
+
+              <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[empty_prompts_body]}"
+                         Style="{DynamicResource TypeCaption}"
+                         TextWrapping="Wrap"
+                         TextAlignment="Center"
+                         MaxWidth="240" />
+            </StackPanel>
+          </Grid>
+
+          <!--
+            Z3-F3 / M7 — split the editor pane into TWO regions:
+              • Editor body (Name/Text/Model/checkboxes) — only visible
+                when HasSelection=true (a prompt is selected or being
+                created).  When empty, replaced by a centered empty-
+                state cue mirroring the list-pane's "No prompts yet"
+                pattern so the right pane visually echoes the left.
+              • Button row (New + Delete) — DOCKED bottom and ALWAYS
+                visible/IsEnabled-evaluable.  Pre-fix attempt at this
+                fix wrapped everything in a single IsEnabled-gated
+                container, which inherited IsEnabled=false to the
+                buttons too — meaning the user could not click "New"
+                to escape the empty state.  DockPanel.Dock="Bottom"
+                puts the buttons in a sibling logical subtree so the
+                IsEnabled inheritance no longer applies.
+
+            Button-level enable still works as before:
+              • New  — RelayCommand with no CanExecute → always enabled.
+              • Delete — CanExecute=HasSelection (M8 / Z3-F4) → dim
+                          when no prompt is selected.
+          -->
+          <DockPanel Grid.Column="1" LastChildFill="True">
+
+            <!-- Button row docked at the bottom.  Stays in a separate
+                 visual subtree from the editor / empty-state grid so
+                 IsEnabled cannot inherit from a hidden ancestor. -->
+            <StackPanel DockPanel.Dock="Bottom"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0">
+              <Button Style="{StaticResource ButtonDefault}"
+                      Command="{Binding NewCommand}"
+                      MinWidth="100" Margin="0,0,8,0"
+                      AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[btn_new]}">
+                <StackPanel Orientation="Horizontal">
+                  <Path Data="{StaticResource Icon.Plus}"
+                        Stroke="{DynamicResource OnSurfaceStrongBrush}"
+                        StrokeThickness="1.8"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"
+                        Width="14" Height="14"
+                        Stretch="Uniform"
+                        VerticalAlignment="Center"
+                        Margin="0,0,8,0" />
+                  <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[btn_new]}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding DeleteCommand}"
+                      MinWidth="100"
+                      AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[btn_delete]}">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+                    <Setter Property="Foreground" Value="{DynamicResource StatusErrorBrush}" />
+                    <Style.Triggers>
+                      <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDisabledBrush}" />
+                      </Trigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+                <StackPanel Orientation="Horizontal">
+                  <Path Data="{StaticResource Icon.Trash2}"
+                        StrokeThickness="1.8"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"
+                        StrokeLineJoin="Round"
+                        Width="14" Height="14"
+                        Stretch="Uniform"
+                        VerticalAlignment="Center"
+                        Margin="0,0,8,0">
+                    <!-- Stroke binding through a Style+Trigger so the
+                         icon matches the button's text colour in both
+                         enabled (StatusError) and disabled
+                         (OnSurfaceDisabled) states.  Without this the
+                         trash glyph would stay red even when the
+                         button itself is greyed out, which reads as a
+                         bug. -->
+                    <Path.Style>
+                      <Style TargetType="Path">
+                        <Setter Property="Stroke" Value="{DynamicResource StatusErrorBrush}" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=Button}}" Value="False">
+                            <Setter Property="Stroke" Value="{DynamicResource OnSurfaceDisabledBrush}" />
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Path.Style>
+                  </Path>
+                  <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[btn_delete]}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+
+            <!-- Editor body / empty-state overlay.  Visibility on each
+                 child is gated by HasSelection; only one paints at a
+                 time. -->
+            <Grid>
+
+              <!-- Empty-state cue: no prompt selected (or none exists).
+                   IsHitTestVisible=False so clicks fall through to the
+                   parent Grid; nothing here is interactive. -->
+              <StackPanel HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Margin="24"
+                          IsHitTestVisible="False">
+                <StackPanel.Style>
+                  <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding HasSelection}" Value="False">
+                        <Setter Property="Visibility" Value="Visible" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </StackPanel.Style>
+
+                <Path Data="{StaticResource Icon.Edit3}"
+                      Stroke="{DynamicResource OnSurfaceMutedBrush}"
+                      StrokeThickness="1.5"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Width="40" Height="40"
+                      Stretch="Uniform"
+                      HorizontalAlignment="Center" />
+
+                <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[empty_editor_title]}"
+                           Style="{DynamicResource TypeBodyStrong}"
+                           HorizontalAlignment="Center"
+                           Margin="0,12,0,4" />
+
+                <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[empty_editor_body]}"
+                           Style="{DynamicResource TypeCaption}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           MaxWidth="280" />
+              </StackPanel>
+
+              <!-- Editor fields proper.  Visible only when HasSelection
+                   is true.  Row layout unchanged from the pre-M7
+                   8-row form except the trailing button row has moved
+                   into DockPanel.Bottom above. -->
+              <Grid>
+                <Grid.Style>
+                  <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding HasSelection}" Value="True">
+                        <Setter Property="Visibility" Value="Visible" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Grid.Style>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="{Binding Source={x:Static services:Translator.Instance}, Path=[prompt_name]}"
+                           Style="{DynamicResource TypeBodyStrong}"
+                           Margin="0,0,0,4" />
+                <TextBox Grid.Row="1"
+                         Style="{StaticResource InputTextBox}"
+                         Text="{Binding EditorName, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,0,16" />
+
+            <TextBlock Grid.Row="2"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[prompt_text]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,0,0,4" />
+            <!--
+              Editor TextBox + placeholder overlay layered in the
+              same Grid cell.  WPF TextBox has no native placeholder
+              affordance, so we paint a muted TextBlock on top whose
+              Visibility flips to Visible only when EditorText is
+              empty.  IsHitTestVisible=False so the user's clicks
+              fall through to the TextBox underneath.
+
+              Padding 14,8 matches the InputTextBox template's
+              effective text origin (Padding 10,6 inside a 1-px
+              border ≈ 11,7; the extra 3,1 nudges the placeholder
+              to land exactly where the user's first typed
+              character will appear).  Hidden the moment they type
+              anything so the text + hint never coexist.
+            -->
+            <Grid Grid.Row="3" Margin="0,0,0,16">
+              <TextBox x:Name="EditorTextBox"
+                       Style="{StaticResource InputTextBox}"
+                       Text="{Binding EditorText, UpdateSourceTrigger=PropertyChanged}"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap"
+                       VerticalScrollBarVisibility="Auto"
+                       VerticalContentAlignment="Top" />
+              <TextBlock IsHitTestVisible="False"
+                         Foreground="{DynamicResource OnSurfaceMutedBrush}"
+                         FontFamily="{DynamicResource FontPrimary}"
+                         FontSize="14"
+                         FontStyle="Italic"
+                         TextWrapping="Wrap"
+                         Padding="14,8"
+                         VerticalAlignment="Top"
+                         HorizontalAlignment="Stretch"
+                         Text="{Binding Source={x:Static services:Translator.Instance}, Path=[prompt_text_placeholder]}">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Text, ElementName=EditorTextBox}" Value="">
+                        <Setter Property="Visibility" Value="Visible" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+            </Grid>
+
+            <!-- Per-prompt model override block. Whole panel collapses when
+                 the experimental master flag is off, so the gap closes too —
+                 prevents an awkward empty row in the editor when the feature
+                 is disabled. ComboBox is editable so users can type any
+                 model id; AvailableModels is just a convenience drop-down
+                 of their pinned ids from General → Model. -->
+            <StackPanel Grid.Row="4"
+                        Orientation="Vertical"
+                        Visibility="{Binding IsPerPromptModelExperimentEnabled, Converter={StaticResource BoolToVisibility}}"
+                        Margin="0,0,0,16">
+              <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[prompt_model_override]}"
+                         Style="{DynamicResource TypeBodyStrong}"
+                         Margin="0,0,0,4" />
+              <!-- H12 (Z6-F2) fix: IsEditable=False (was True) prevents
+                   silent off-catalogue typos that surfaced only at hotkey
+                   time as a generic api_bad_request toast.  Binding moves
+                   from Text to SelectedItem so the curated list is the
+                   single source of valid values.  Stored off-catalogue
+                   values from prior versions or hand-edited config stay
+                   selectable: RebuildAvailableModelsForPicker re-inserts
+                   the current EditorModel if it is missing from the
+                   pinned catalogue, so the user can see what is stored
+                   and replace it. -->
+              <ComboBox Style="{StaticResource InputComboBox}"
+                        ItemsSource="{Binding AvailableModelsForPicker}"
+                        SelectedItem="{Binding EditorModel, Mode=TwoWay}"
+                        IsEditable="False"
+                        ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[prompt_model_override_hint]}" />
+            </StackPanel>
+
+            <CheckBox Grid.Row="5"
+                      Style="{StaticResource DefaultCheckBox}"
+                      Content="{Binding Source={x:Static services:Translator.Instance}, Path=[preserve_language]}"
+                      IsChecked="{Binding EditorPreserveLanguage, Mode=TwoWay}"
+                      Margin="0,0,0,8" />
+
+            <CheckBox Grid.Row="6"
+                      Style="{StaticResource DefaultCheckBox}"
+                      Content="{Binding Source={x:Static services:Translator.Instance}, Path=[show_diff_preview]}"
+                      IsChecked="{Binding EditorShowDiffPreview, Mode=TwoWay}"
+                      Visibility="{Binding IsDiffPreviewExperimentEnabled, Converter={StaticResource BoolToVisibility}}"
+                      Margin="0,0,0,16" />
+              </Grid>
+              <!-- /editor fields Grid -->
+            </Grid>
+            <!-- /editor body + empty-state overlay Grid -->
+          </DockPanel>
+          <!-- /Grid.Column=1 DockPanel -->
+        </Grid>
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+  <!--
+    Spacing scale (4-px base) per project_design_guide.md §5.1.
+    Any Margin/Padding value MUST come from this set. Hand-rolled
+    spacings are a review blocker.
+
+    Doubles for Margin/Padding components and ad-hoc layout, Thickness
+    presets for the most common compound paddings.
+  -->
+
+  <!-- Scalar spacing tokens (§5.1) -->
+  <sys:Double x:Key="Space0">0</sys:Double>
+  <sys:Double x:Key="Space2">2</sys:Double>
+  <sys:Double x:Key="Space4">4</sys:Double>
+  <sys:Double x:Key="Space8">8</sys:Double>
+  <sys:Double x:Key="Space12">12</sys:Double>
+  <sys:Double x:Key="Space16">16</sys:Double>
+  <sys:Double x:Key="Space20">20</sys:Double>
+  <sys:Double x:Key="Space24">24</sys:Double>
+  <sys:Double x:Key="Space32">32</sys:Double>
+  <sys:Double x:Key="Space48">48</sys:Double>
+  <sys:Double x:Key="Space64">64</sys:Double>
+
+  <!-- Compound paddings (§5.1, §5.2) -->
+  <Thickness x:Key="PaddingCard">16,16,16,16</Thickness>
+  <Thickness x:Key="PaddingDialog">24,20,24,20</Thickness>
+  <Thickness x:Key="PaddingToast">14,12,14,12</Thickness>
+  <Thickness x:Key="PaddingButton">12,6,12,6</Thickness>
+  <Thickness x:Key="PaddingButtonLarge">20,10,20,10</Thickness>
+  <Thickness x:Key="PaddingInput">10,6,10,6</Thickness>
+
+  <!-- Corner radii (§5.2) — exposed as CornerRadius for binding to Border.CornerRadius -->
+  <CornerRadius x:Key="RadiusButton">6</CornerRadius>
+  <CornerRadius x:Key="RadiusButtonLarge">8</CornerRadius>
+  <CornerRadius x:Key="RadiusInput">6</CornerRadius>
+  <CornerRadius x:Key="RadiusCheckbox">4</CornerRadius>
+  <CornerRadius x:Key="RadiusListItem">6</CornerRadius>
+  <CornerRadius x:Key="RadiusToast">8</CornerRadius>
+  <CornerRadius x:Key="RadiusDialog">12</CornerRadius>
+
+  <!-- WindowChrome.ResizeBorderThickness tokens.  Two intents:
+         WindowChromeResizeBorder  6  — resizable hosts (Settings, Models, DiffPreview).
+                                       Sets the hit-test strip outside the visible content
+                                       where the cursor switches to N/S/E/W resize.
+         WindowChromeFixedBorder   0  — fixed-size dialogs (Confirm, Onboarding).
+                                       Resize is disabled by ResizeMode=NoResize anyway;
+                                       this just kills the residual hit-test ring.
+       Single source so future chrome adjustments touch one line, not five. -->
+  <Thickness x:Key="WindowChromeResizeBorder">6</Thickness>
+  <Thickness x:Key="WindowChromeFixedBorder">0</Thickness>
+
+  <!-- ScrollBars.xaml thumb padding (§L22).  The 2-px horizontal / 1-px
+       vertical strip floats the thumb inside the track rather than letting
+       it touch the rail edges.  Lifted out of the inline ControlTemplate
+       so the Spacing.xaml token policy ("no hand-rolled Margins") stays
+       enforceable. -->
+  <Thickness x:Key="ScrollBarThumbMargin">2,1</Thickness>
+
+</ResourceDictionary>

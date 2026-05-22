@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{7E24AE08-C215-4019-B422-D53F31AF7367}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapyBro", "src\CapyBro\CapyBro.csproj", "{F953746E-DB8B-48F2-B13E-D6B6434474AB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{AAB062B0-4115-4784-9097-6B5FC10E6877}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapyBro.Tests", "tests\CapyBro.Tests\CapyBro.Tests.csproj", "{BD90EC45-45B7-4136-8D95-C0D551DA8678}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F953746E-DB8B-48F2-B13E-D6B6434474AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F953746E-DB8B-48F2-B13E-D6B6434474AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F953746E-DB8B-48F2-B13E-D6B6434474AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F953746E-DB8B-48F2-B13E-D6B6434474AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD90EC45-45B7-4136-8D95-C0D551DA8678}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD90EC45-45B7-4136-8D95-C0D551DA8678}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD90EC45-45B7-4136-8D95-C0D551DA8678}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD90EC45-45B7-4136-8D95-C0D551DA8678}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F953746E-DB8B-48F2-B13E-D6B6434474AB} = {7E24AE08-C215-4019-B422-D53F31AF7367}
+		{BD90EC45-45B7-4136-8D95-C0D551DA8678} = {AAB062B0-4115-4784-9097-6B5FC10E6877}
+	EndGlobalSection
+EndGlobal

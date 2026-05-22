@@ -1,0 +1,106 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>CapyBro</RootNamespace>
+    <!-- AssemblyName drives the output filename (CapyBro.exe / CapyBro.dll /
+         CapyBro.pdb / CapyBro.xml).  RootNamespace stays "CapyBro"
+         for backward-compatibility with InternalsVisibleTo("CapyBro.Tests")
+         and with every namespace declaration scattered across Services /
+         ViewModels / Views — renaming the namespace would be a huge churn for
+         no user-visible benefit.  Only the produced binary's filename
+         changes here, so users see "CapyBro.exe" in Task Manager and
+         %LOCALAPPDATA%\CapyBro\ matching the user-facing brand. -->
+    <AssemblyName>CapyBro</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <FileVersion>2.0.0</FileVersion>
+    <Product>CapyBro</Product>
+    <AssemblyTitle>CapyBro</AssemblyTitle>
+    <!--
+      FZ6-F4 / M40 — without <Company> the SDK's apphost rewriter leaves
+      the CompanyName VersionInfo field empty (apphost.exe template
+      default) which surfaces as a hollow "Publisher" column in Task
+      Manager and as a blank "Company" row under Properties → Details.
+      The bare exe's metadata then disagrees with the installer's
+      `VIAddVersionKey "CompanyName" "CapyBro"` and the post-rebrand
+      brand label is missing from the .exe shipped INSIDE the installer.
+    -->
+    <Company>CapyBro</Company>
+    <Copyright>(c) 2025</Copyright>
+    <ApplicationIcon>..\..\assets\logo.ico</ApplicationIcon>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1574;CS1734</NoWarn>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!--
+    Publish profile: produce a single self-contained .exe so the installer
+    (installer/installer.nsi) only has to ship one file. Without these the
+    publish output is a folder of ~200 DLLs and the installer's
+    `File "CapyBro.exe"` line copies an exe that fails to start
+    because none of its dependencies are present.
+    EnableCompressionInSingleFile + IncludeNativeLibrariesForSelfExtract
+    keep the bundle ~70 MB (vs ~200 MB uncompressed) while still embedding
+    the WPF native components.
+  -->
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CapyBro.Tests" />
+  </ItemGroup>
+
+  <!--
+    Brand assets: logo.ico (multi-res 16/24/32/48/64/128/256, generated
+    by scripts/png-to-ico.ps1 from logo.png) is the canonical icon used
+    by the .exe (via <ApplicationIcon>), the tray
+    (App.LoadEmbeddedTrayIcon), and Win shortcuts (installer.nsi).
+    logo.png is bundled for in-XAML rendering on the onboarding wizard
+    welcome page (square 96 × 96 mark).
+    header.png is the wide capybara + wordmark composition used on the
+    Settings sidebar header — pre-rendered to match marketing material.
+  -->
+  <ItemGroup>
+    <Resource Include="..\..\assets\logo.ico">
+      <Link>assets\logo.ico</Link>
+    </Resource>
+    <Resource Include="..\..\assets\logo.png">
+      <Link>assets\logo.png</Link>
+    </Resource>
+    <Resource Include="..\..\assets\header.png">
+      <Link>assets\header.png</Link>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" />
+    <PackageReference Include="H.NotifyIcon.Wpf" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="DiffPlex" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="StyleCop.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

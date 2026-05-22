@@ -1,0 +1,146 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    CheckBox style per project_design_guide.md §7.6 + §8.3:
+    16×16 rounded-square glyph (CR=4) + Icon.Check 12×12 inside,
+    centred. The tick fades + scales 0 → 1 over 200 ms EaseOut on
+    IsChecked enter; reverses on uncheck so the user gets a
+    confirmation cue rather than an instant snap.
+
+    State contract:
+      Unchecked  Layer1 bg + BorderDefault
+      Hover      Layer1 bg + BorderStrong
+      Checked    BrandPrimary bg + no border (the brand fill IS the
+                 indicator), tick stroke is OnSurfaceInverted (white)
+      Disabled   Layer2 bg + BorderSubtle, muted foreground
+
+    The label uses the inherited Foreground; the glyph never inherits
+    it — its Stroke and Background are explicitly themed to keep the
+    contrast between unchecked-glyph (subtle) and content-text (strong).
+  -->
+
+  <Style x:Key="DefaultCheckBox" TargetType="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceStrongBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceLayer1Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontFamily" Value="{DynamicResource FontPrimary}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="SnapsToDevicePixels" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CheckBox">
+          <StackPanel Orientation="Horizontal" Background="Transparent">
+            <Border x:Name="Glyph"
+                    Width="16"
+                    Height="16"
+                    CornerRadius="4"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    VerticalAlignment="Center"
+                    SnapsToDevicePixels="True">
+              <Path x:Name="Tick"
+                    Data="{DynamicResource Icon.Check}"
+                    Stroke="{DynamicResource OnSurfaceInvertedBrush}"
+                    StrokeThickness="2"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"
+                    StrokeLineJoin="Round"
+                    Stretch="Uniform"
+                    Width="10"
+                    Height="10"
+                    Opacity="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    RenderTransformOrigin="0.5,0.5">
+                <Path.RenderTransform>
+                  <ScaleTransform x:Name="TickScale" ScaleX="0.4" ScaleY="0.4" />
+                </Path.RenderTransform>
+              </Path>
+            </Border>
+            <ContentPresenter Margin="8,0,0,0"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              RecognizesAccessKey="True" />
+          </StackPanel>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Glyph" Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Glyph" Property="BorderBrush" Value="{DynamicResource BorderFocusBrush}" />
+              <Setter TargetName="Glyph" Property="BorderThickness" Value="2" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Glyph" Property="Background" Value="{DynamicResource BrandPrimaryBrush}" />
+              <Setter TargetName="Glyph" Property="BorderBrush" Value="{DynamicResource BrandPrimaryBrush}" />
+              <Trigger.EnterActions>
+                <BeginStoryboard>
+                  <Storyboard>
+                    <DoubleAnimation Storyboard.TargetName="Tick"
+                                     Storyboard.TargetProperty="Opacity"
+                                     To="1.0"
+                                     Duration="0:0:0.2">
+                      <DoubleAnimation.EasingFunction>
+                        <CubicEase EasingMode="EaseOut" />
+                      </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                    <DoubleAnimation Storyboard.TargetName="TickScale"
+                                     Storyboard.TargetProperty="ScaleX"
+                                     To="1.0"
+                                     Duration="0:0:0.2">
+                      <DoubleAnimation.EasingFunction>
+                        <CubicEase EasingMode="EaseOut" />
+                      </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                    <DoubleAnimation Storyboard.TargetName="TickScale"
+                                     Storyboard.TargetProperty="ScaleY"
+                                     To="1.0"
+                                     Duration="0:0:0.2">
+                      <DoubleAnimation.EasingFunction>
+                        <CubicEase EasingMode="EaseOut" />
+                      </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                  </Storyboard>
+                </BeginStoryboard>
+              </Trigger.EnterActions>
+              <Trigger.ExitActions>
+                <BeginStoryboard>
+                  <Storyboard>
+                    <DoubleAnimation Storyboard.TargetName="Tick"
+                                     Storyboard.TargetProperty="Opacity"
+                                     To="0"
+                                     Duration="0:0:0.12">
+                      <DoubleAnimation.EasingFunction>
+                        <CubicEase EasingMode="EaseIn" />
+                      </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
+                    <DoubleAnimation Storyboard.TargetName="TickScale"
+                                     Storyboard.TargetProperty="ScaleX"
+                                     To="0.4"
+                                     Duration="0:0:0.12" />
+                    <DoubleAnimation Storyboard.TargetName="TickScale"
+                                     Storyboard.TargetProperty="ScaleY"
+                                     To="0.4"
+                                     Duration="0:0:0.12" />
+                  </Storyboard>
+                </BeginStoryboard>
+              </Trigger.ExitActions>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDisabledBrush}" />
+              <Setter TargetName="Glyph" Property="Background" Value="{DynamicResource SurfaceLayer2Brush}" />
+              <Setter TargetName="Glyph" Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

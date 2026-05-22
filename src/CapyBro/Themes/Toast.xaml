@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Toast surface style per project_design_guide.md §11 task 13 / §7.9.
+    Single x:Key'd Border style applied to the outer chrome of
+    ToastWindow. The Window itself stays untouched (WindowStyle=None,
+    AllowsTransparency=True, ShowActivated=False are set in
+    ToastWindow.xaml directly — Style on Window can't change those
+    properties post-instantiation).
+
+    Visuals match §6.1 elevation-3 (modal):
+      - Layer1 background (theme-aware via Tokens.xaml)
+      - 1 px BorderDefault stroke
+      - CornerRadius 8 px (§5.2 Toast row)
+      - DropShadowEffect: y=2 blur=12 opacity=0.45 — sized for the
+        compact toast surface, dimmer than the §6.1 modal shadow
+        because toasts auto-dismiss and shouldn't pull the eye like
+        a dialog does.
+
+    Acrylic-thin backdrop on Win11 (§6.2) is deferred — currently
+    blocked by ToastWindow's AllowsTransparency=True (DwmSetWindowAttribute
+    DWMWA_SYSTEMBACKDROP_TYPE silently no-ops on transparent windows).
+    Refactoring to AllowsTransparency=False + DWMWA_WINDOW_CORNER_PREFERENCE
+    rounded corners is a separate change with risk of regression on
+    the bottom-right positioning + ShowActivated=False semantics; the
+    DropShadow treatment here remains the documented Win10 fallback
+    per design-guide §6.2 and reads identically on both OSes today.
+  -->
+
+  <Style x:Key="ToastBorder" TargetType="Border">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceLayer1Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="16,14,16,14" />
+    <Setter Property="Margin" Value="8" />
+    <Setter Property="SnapsToDevicePixels" Value="True" />
+    <Setter Property="Effect">
+      <Setter.Value>
+        <DropShadowEffect ShadowDepth="2"
+                          BlurRadius="12"
+                          Opacity="0.45" />
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

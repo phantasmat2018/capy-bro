@@ -1,0 +1,52 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Semantic brush tokens. Views consume these via {DynamicResource ...Brush}
+    so a theme swap in MergedDictionaries[0] (Colors.Light ↔ Colors.Dark)
+    re-resolves the bound Color and the brush re-renders. Per
+    project_design_guide.md §2.3.6.
+
+    Brush color is a DependencyProperty, so DynamicResource correctly
+    propagates updates through the brush. The brush itself stays
+    unfrozen — do not call Freeze() on these or the binding breaks.
+  -->
+
+  <!-- Brand & accent -->
+  <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{DynamicResource BrandPrimaryColor}" />
+  <SolidColorBrush x:Key="BrandPrimaryHoverBrush" Color="{DynamicResource BrandPrimaryHoverColor}" />
+  <SolidColorBrush x:Key="BrandPrimaryPressedBrush" Color="{DynamicResource BrandPrimaryPressedColor}" />
+  <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+
+  <!-- Surfaces -->
+  <SolidColorBrush x:Key="SurfaceCanvasBrush" Color="{DynamicResource SurfaceCanvasColor}" />
+  <SolidColorBrush x:Key="SurfaceLayer1Brush" Color="{DynamicResource SurfaceLayer1Color}" />
+  <SolidColorBrush x:Key="SurfaceLayer2Brush" Color="{DynamicResource SurfaceLayer2Color}" />
+  <SolidColorBrush x:Key="SurfaceLayer3Brush" Color="{DynamicResource SurfaceLayer3Color}" />
+  <SolidColorBrush x:Key="SurfaceSidebarMicaBrush" Color="{DynamicResource SurfaceSidebarMicaColor}" />
+
+  <!-- On-surface text & icon -->
+  <SolidColorBrush x:Key="OnSurfaceStrongBrush" Color="{DynamicResource OnSurfaceStrongColor}" />
+  <SolidColorBrush x:Key="OnSurfaceDefaultBrush" Color="{DynamicResource OnSurfaceDefaultColor}" />
+  <SolidColorBrush x:Key="OnSurfaceMutedBrush" Color="{DynamicResource OnSurfaceMutedColor}" />
+  <SolidColorBrush x:Key="OnSurfaceDisabledBrush" Color="{DynamicResource OnSurfaceDisabledColor}" />
+  <SolidColorBrush x:Key="OnSurfaceInvertedBrush" Color="{DynamicResource OnSurfaceInvertedColor}" />
+
+  <!-- Status -->
+  <SolidColorBrush x:Key="StatusSuccessBrush" Color="{DynamicResource StatusSuccessColor}" />
+  <SolidColorBrush x:Key="StatusErrorBrush" Color="{DynamicResource StatusErrorColor}" />
+  <SolidColorBrush x:Key="StatusWarningBrush" Color="{DynamicResource StatusWarningColor}" />
+  <SolidColorBrush x:Key="StatusInfoBrush" Color="{DynamicResource StatusInfoColor}" />
+
+  <!-- Diff backgrounds (line tinting in DiffPreviewWindow) -->
+  <SolidColorBrush x:Key="DiffInsertBackgroundBrush" Color="{DynamicResource DiffInsertBackgroundColor}" />
+  <SolidColorBrush x:Key="DiffDeleteBackgroundBrush" Color="{DynamicResource DiffDeleteBackgroundColor}" />
+  <SolidColorBrush x:Key="DiffModifiedBackgroundBrush" Color="{DynamicResource DiffModifiedBackgroundColor}" />
+
+  <!-- Borders -->
+  <SolidColorBrush x:Key="BorderSubtleBrush" Color="{DynamicResource BorderSubtleColor}" />
+  <SolidColorBrush x:Key="BorderDefaultBrush" Color="{DynamicResource BorderDefaultColor}" />
+  <SolidColorBrush x:Key="BorderStrongBrush" Color="{DynamicResource BorderStrongColor}" />
+  <SolidColorBrush x:Key="BorderFocusBrush" Color="{DynamicResource BorderFocusColor}" />
+
+</ResourceDictionary>

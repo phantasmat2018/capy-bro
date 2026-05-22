@@ -1,0 +1,61 @@
+# .NET / Visual Studio / Rider artifacts
+[Bb]in/
+[Oo]bj/
+[Pp]ackages/
+[Pp]ublish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+# IDE configs — not used in this project (Claude Code workflow only)
+.vs/
+.vscode/
+.idea/
+.claude/
+*.lock.json
+project.lock.json
+artifacts/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+BenchmarkDotNet.Artifacts/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+nuget.config.user
+
+# Build output
+build/
+out/
+
+# Native AOT / ReadyToRun temp files
+*.pdb
+*.dll.config
+*.exe.config
+
+# Installer artifacts
+installer/output/
+installer/*.exe
+*.cer
+*.pfx
+
+# Logs and temp
+*.log
+*.tmp
+*.bak
+~$*
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Secrets — never commit
+.env
+.env.*
+secrets.json
+appsettings.*.local.json

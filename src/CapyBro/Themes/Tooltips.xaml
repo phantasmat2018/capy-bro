@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Custom ToolTip style.
+
+    Pre-fix every {Binding ... ToolTip=...} on the General tab rendered
+    in the host OS's default popup style: white surface, black text,
+    no wrapping — so a long localised hint like the "Маскування
+    персональних даних" description spilled off the right edge of the
+    screen as a single ~1500-px line.  Visually jarring against the
+    dark canvas, and effectively unreadable for any hint longer than
+    a sentence.
+
+    The style below restyles ToolTip wholesale to match the rest of
+    the surface:
+      • Dark Surface-Layer-2 background, subtle 1-px border,
+        OnSurfaceDefault foreground — same triad the rest of the
+        Settings / Toast / Modal surfaces use.
+      • CornerRadius 6 (matches the §5 input-field radius).
+      • MaxWidth 360 + TextWrapping=Wrap so multi-sentence hints
+        flow into a readable rectangle instead of one line.
+      • HasDropShadow=True so the popup separates from any
+        background it lands over (settings panel, sidebar,
+        another window).
+      • Generous Padding (12,8) — single-line hints still feel
+        proportional; multi-line hints don't crowd the edges.
+
+    Keyed AND TargetType-keyed (the empty-x:Key pattern), so the
+    style applies as the implicit default for ALL ToolTip controls
+    in the app — every existing `ToolTip="{Binding ...}"` on every
+    XAML element automatically picks it up without per-call edits.
+  -->
+
+  <Style TargetType="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource SurfaceLayer2Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDefaultBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="MaxWidth" Value="360" />
+    <Setter Property="HasDropShadow" Value="True" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontFamily" Value="{StaticResource FontPrimary}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToolTip">
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="6"
+                  Padding="{TemplateBinding Padding}"
+                  SnapsToDevicePixels="True">
+            <!--
+              TextBlock instead of ContentPresenter: TextBlock.TextWrapping
+              is NOT an attached property, so applying it on a
+              ContentPresenter (which would forward to its auto-generated
+              child) doesn't compile.  ToolTip.Content is a string for
+              every call site in this app (every ToolTip="{Binding
+              [some_key]}" resolves to a localised string), so a direct
+              TextBlock with Text bound to the templated parent's
+              Content gives us TextWrapping=Wrap on the actual
+              text-rendering element.  Long localised hints (the
+              privacy-redaction one is ~140 chars; the
+              keep-result-selected one is ~220) now flow as a paragraph
+              capped by the parent ToolTip.MaxWidth=360.
+            -->
+            <TextBlock Text="{TemplateBinding Content}"
+                       TextWrapping="Wrap"
+                       LineHeight="18"
+                       Foreground="{TemplateBinding Foreground}"
+                       FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize}"
+                       SnapsToDevicePixels="True" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,110 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,xaml}]
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,xml,csproj,props,targets,sln,resx,nsi,manifest}]
+indent_style = space
+indent_size = 2
+
+[*.cs]
+csharp_new_line_before_open_brace = all
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
+# Treat all .NET analyzer rules as warning by default
+dotnet_analyzer_diagnostic.severity = warning
+
+# StyleCop overrides — pedantic rules disabled for app code
+dotnet_diagnostic.SA1633.severity = none  # File header
+dotnet_diagnostic.SA1101.severity = none  # Prefix with this.
+dotnet_diagnostic.SA1200.severity = none  # Using directives placement
+dotnet_diagnostic.SA1309.severity = none  # Field names should not begin with underscore
+dotnet_diagnostic.SA1413.severity = none  # Use trailing comma in multi-line initializers
+dotnet_diagnostic.SA1600.severity = none  # Elements should be documented
+dotnet_diagnostic.SA1601.severity = none  # Partial elements should be documented
+dotnet_diagnostic.SA1602.severity = none  # Enumeration items should be documented
+dotnet_diagnostic.SA1623.severity = none  # Property summary documentation
+dotnet_diagnostic.SA1629.severity = none  # Documentation should end with period
+dotnet_diagnostic.SA1652.severity = none  # Enable XML documentation output
+dotnet_diagnostic.SA1515.severity = none  # Single-line comment must be preceded by blank line
+dotnet_diagnostic.SA1201.severity = none  # Member ordering (events before properties, etc.) — stylistic
+dotnet_diagnostic.SA1204.severity = none  # Static members before instance — stylistic
+dotnet_diagnostic.SA1214.severity = none  # Readonly fields ordering
+dotnet_diagnostic.SA1402.severity = none  # File may only contain a single type (allow tightly-coupled small DTOs together)
+dotnet_diagnostic.SA1649.severity = none  # File name should match first type
+dotnet_diagnostic.SA1611.severity = none  # Parameter docs (XML doc) — partial summaries are OK
+dotnet_diagnostic.SA1615.severity = none  # Return-value doc — partial summaries are OK
+dotnet_diagnostic.SA1614.severity = none  # Parameter docs must contain text
+dotnet_diagnostic.SA1616.severity = none  # Return docs must contain text
+dotnet_diagnostic.SA1618.severity = none  # Generic type parameter docs
+dotnet_diagnostic.SA1619.severity = none  # Generic type parameter docs (partial)
+dotnet_diagnostic.SA1642.severity = none  # Constructor docs must begin with standard "Initializes a new instance"
+dotnet_diagnostic.SA1604.severity = none  # Element documentation should have summary
+
+# Microsoft analyzer overrides — for app project (not a library)
+dotnet_diagnostic.CA1014.severity = none  # Mark assembly with CLSCompliant
+dotnet_diagnostic.CA1051.severity = none  # Do not declare visible instance fields (records)
+dotnet_diagnostic.CA1303.severity = none  # Do not pass literals as localized parameters (we use Translator)
+dotnet_diagnostic.CA1304.severity = none  # CultureInfo on string operations
+dotnet_diagnostic.CA1305.severity = none  # IFormatProvider on string operations
+dotnet_diagnostic.CA1310.severity = none  # StringComparison on Equals/StartsWith
+dotnet_diagnostic.CA1311.severity = none  # CultureInfo on ToUpper/ToLower
+dotnet_diagnostic.CA2007.severity = none  # ConfigureAwait — WPF apps need sync context
+dotnet_diagnostic.CS1591.severity = none  # Missing XML doc
+dotnet_diagnostic.CA1308.severity = none  # ToLowerInvariant→ToUpperInvariant (Turkish-locale concern not applicable)
+dotnet_diagnostic.CA1848.severity = none  # LoggerMessage delegates (overhead not justified)
+dotnet_diagnostic.CA2227.severity = none  # Collection properties should be read-only (records use init)
+
+# Style rule overrides — usability over pedantry
+dotnet_diagnostic.IDE0007.severity = suggestion  # Use var (kept as suggestion, not warning)
+dotnet_diagnostic.IDE0008.severity = suggestion  # Use explicit type (kept as suggestion)
+dotnet_diagnostic.IDE0058.severity = none        # Expression value never used
+dotnet_diagnostic.IDE0290.severity = none        # Use primary constructor (optional)
+dotnet_diagnostic.IDE0040.severity = suggestion  # Add accessibility modifiers
+dotnet_diagnostic.IDE0011.severity = suggestion  # Add braces
+dotnet_diagnostic.IDE0270.severity = suggestion  # Use coalesce expression
+dotnet_diagnostic.IDE0022.severity = suggestion  # Expression body for methods (allow either style)
+dotnet_diagnostic.IDE0028.severity = suggestion  # Collection initialization simplification
+dotnet_diagnostic.IDE0046.severity = suggestion  # Convert to conditional expression (ternaries can hurt readability)
+dotnet_diagnostic.IDE0045.severity = suggestion  # Convert to conditional expression (assignment)
+dotnet_diagnostic.IDE0039.severity = suggestion  # Use local function instead of lambda (lambdas are fine)
+dotnet_diagnostic.IDE0072.severity = none        # Populate switch (status-code switch pattern is intentional)
+dotnet_diagnostic.IDE0078.severity = suggestion  # Use pattern matching
+
+# Threading analyzer — keep these strict
+dotnet_diagnostic.VSTHRD200.severity = warning  # Method should end in Async
+dotnet_diagnostic.VSTHRD100.severity = error    # Avoid async void
+dotnet_diagnostic.VSTHRD003.severity = error    # Avoid awaiting foreign Tasks
+dotnet_diagnostic.VSTHRD111.severity = none     # ConfigureAwait — WPF needs sync context (mirrors CA2007)
+dotnet_diagnostic.VSTHRD001.severity = none     # JoinableTaskFactory — overkill for direct Dispatcher use in WPF
+
+# Tests can have underscore method names (Method_Should_DoX style)
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none  # Identifiers should not contain underscores
+dotnet_diagnostic.CA1062.severity = none  # Validate arguments
+dotnet_diagnostic.CA1515.severity = none  # Public types should be sealed (xUnit needs public test classes)
+dotnet_diagnostic.CA1031.severity = none  # Catch general Exception (acceptable for stress-test exception counting)
+dotnet_diagnostic.SA1202.severity = none  # Public-before-private ordering (helpers near top is OK in tests)
+dotnet_diagnostic.SA1515.severity = none  # Single-line comment must be preceded by blank line
+dotnet_diagnostic.CA1861.severity = none  # Avoid constant arrays as arguments (InlineData arrays are fine)
+dotnet_diagnostic.CA2000.severity = none  # Dispose objects before scope (test helpers create disposables intentionally)
+dotnet_diagnostic.CA1002.severity = none  # Use Collection<T> instead of List<T> (test helpers fine)
+dotnet_diagnostic.SA1118.severity = none  # Parameter spans multiple lines (raw strings span lines)
+dotnet_diagnostic.SA1316.severity = none  # Tuple element naming case (lowercase OK)
+dotnet_diagnostic.SA1122.severity = none  # Use string.Empty for empty strings ("" reads fine in tests)
+dotnet_diagnostic.SA1117.severity = none  # Parameter layout (Moq It.IsAny chains read OK either way)
+dotnet_diagnostic.IDE0200.severity = none  # Remove unnecessary lambda (lambdas read better in Moq setups)
+dotnet_diagnostic.SA1313.severity = none  # Parameter '_' (discard) is fine in tests

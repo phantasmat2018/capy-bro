@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <!--
+    Motion tokens per project_design_guide.md §8.1.
+
+    Token vs Use:
+      Motion.Instant   0 ms     reduce-motion fallback target (§8.4)
+      Motion.Fast    120 ms     hover state changes, button press
+      Motion.Default 240 ms     tab switch fade, modal fade-in
+      Motion.Slow    400 ms     toast slide-in, page transitions
+
+    Format: "h:mm:ss.fff" — consumers parse via WPF's DurationConverter.
+
+    Why strings, not <Duration> elements: Duration has no parameterless
+    constructor that XAML can use directly. Strings + the consumer's
+    DurationConverter is the path of least resistance.
+
+    Important: Storyboard.Duration assignments inside ControlTemplate
+    triggers (Buttons.xaml press scale, CheckBox.xaml tick) cannot
+    reference these tokens via DynamicResource — WPF's ControlTemplate
+    sealing tries to freeze its Storyboard tree, and DynamicResource
+    references prevent freezing ("Cannot freeze this Storyboard
+    timeline tree for use across threads"). StaticResource is the
+    other option but breaks the standalone-XAML-load path used by
+    snapshot tests. So the templates inline their durations as
+    literals (with §8.1 comments) and these tokens are consumed only
+    by code-behind animation paths (TransitioningContentControl,
+    RevealablePasswordBox); ReduceMotion.For() routes them through
+    the §8.4 fallback. ApplyToApplicationResources shadows these
+    keys at startup if the OS preference is off so future
+    code-behind consumers can rely on the same token surface.
+
+    Spring (§8.1 last entry) is intentionally not a token here —
+    spring physics in WPF live in PowerEase / BackEase / ElasticEase
+    parameter combinations, not a Duration scalar; consumers wire
+    them inline next to the storyboard they belong to.
+  -->
+
+  <sys:String x:Key="Motion.Instant">0:0:0</sys:String>
+  <sys:String x:Key="Motion.Fast">0:0:0.12</sys:String>
+  <sys:String x:Key="Motion.Default">0:0:0.24</sys:String>
+  <sys:String x:Key="Motion.Slow">0:0:0.4</sys:String>
+
+</ResourceDictionary>

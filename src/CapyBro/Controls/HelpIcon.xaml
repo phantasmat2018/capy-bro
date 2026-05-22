@@ -1,0 +1,77 @@
+<UserControl x:Class="CapyBro.Controls.HelpIcon"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+
+  <!--
+    Small "?" affordance that surfaces a tooltip on hover.  Use next
+    to section headings or fields whose meaning isn't immediately
+    obvious to a first-time user (hotkey conflict rules, what an
+    OpenRouter model id looks like, etc.).
+
+    Why this control exists:
+      • Tooltips on labels alone aren't *discoverable* — the user has
+        to guess that hovering will reveal a hint.  A visible "?"
+        glyph signals "more info available here" the same way every
+        modern web app and OS settings page does.
+      • Centralising the visual treatment (size, colour, hover
+        affordance, hit area) means every help icon in the app
+        looks identical and behaves the same way — no per-call
+        styling drift.
+
+    The actual hint copy comes from the bound HintText DP and
+    renders via WPF's stock ToolTip pipeline, which our custom
+    Themes/Tooltips.xaml restyles into the dark Surface-Layer-2
+    multi-line popup automatically.  No special tooltip plumbing
+    needed here.
+
+    Hit area: 20×20 transparent Border so the cursor doesn't have
+    to land precisely on a stroked pixel of the glyph for the
+    tooltip / hover affordance to engage.  WCAG-recommended
+    minimum click target is 24×24, but inline next to a heading
+    we're sized to be visually present without being chunky;
+    Cursor=Help (a "?" cursor) is the discoverability cue.
+
+    Hover treatment: the Path's Stroke is bound through a Style
+    DataTrigger that watches the Border's IsMouseOver via
+    ElementName.  Stroke brightens from OnSurfaceMuted to
+    OnSurfaceDefault when the cursor is over the hit area —
+    Style Setters on a Path can't target other elements directly,
+    so the only way to flip the stroke from a parent's hover
+    state is to bind through a property trigger on the Path
+    itself.  ElementName binding (rather than RelativeSource
+    AncestorType=Border) is robust against the Path being moved
+    inside additional wrappers in future tweaks.
+  -->
+
+  <Border x:Name="HitArea"
+          Width="20"
+          Height="20"
+          Background="Transparent"
+          Cursor="Help"
+          ToolTip="{Binding HintText, ElementName=Root}"
+          AutomationProperties.Name="{Binding HintText, ElementName=Root}"
+          SnapsToDevicePixels="True">
+    <Path Data="{StaticResource Icon.HelpCircle}"
+          StrokeThickness="1.5"
+          StrokeStartLineCap="Round"
+          StrokeEndLineCap="Round"
+          StrokeLineJoin="Round"
+          Width="16"
+          Height="16"
+          Stretch="Uniform"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center">
+      <Path.Style>
+        <Style TargetType="Path">
+          <Setter Property="Stroke" Value="{DynamicResource OnSurfaceMutedBrush}" />
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, ElementName=HitArea}" Value="True">
+              <Setter Property="Stroke" Value="{DynamicResource OnSurfaceDefaultBrush}" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </Path.Style>
+    </Path>
+  </Border>
+</UserControl>

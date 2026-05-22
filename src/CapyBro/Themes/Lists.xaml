@@ -1,0 +1,110 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    List styles per project_design_guide.md §7.7. Two x:Key'd styles:
+
+      ListListBox      neutral container, transparent bg + subtle 1px
+                       border + 6 px CR + 4 px padding gutter
+      ListListBoxItem  per-row hover/selected states with 3 px Brand
+                       primary indicator strip on the left edge for the
+                       selected row (Win11 Settings idiom)
+
+    InputComboBoxItem in Themes/Inputs.xaml is the popup-list cousin of
+    these — that one stays separate because §7.5 spec calls for tighter
+    36-px-no-indicator rows in dropdowns (vs 36-px-with-indicator here).
+  -->
+
+  <Style x:Key="ListListBoxItem" TargetType="ListBoxItem">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceStrongBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="FontFamily" Value="{DynamicResource FontPrimary}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="SnapsToDevicePixels" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListBoxItem">
+          <Border x:Name="Root"
+                  Background="{TemplateBinding Background}"
+                  Padding="{TemplateBinding Padding}"
+                  CornerRadius="6"
+                  SnapsToDevicePixels="True">
+            <Grid>
+              <!-- 3 px brand indicator strip — collapsed by default,
+                   Visible on selection. Negative left margin pulls it
+                   into the parent's CornerRadius gutter so it looks
+                   flush with the row's left edge while the
+                   ContentPresenter still respects Padding. -->
+              <Border x:Name="SelectedIndicator"
+                      Width="3"
+                      HorizontalAlignment="Left"
+                      Background="{DynamicResource BrandPrimaryBrush}"
+                      CornerRadius="2"
+                      Margin="-12,4,0,4"
+                      Visibility="Collapsed" />
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </Grid>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="{DynamicResource SurfaceLayer2Brush}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="{DynamicResource SurfaceLayer3Brush}" />
+              <Setter TargetName="SelectedIndicator" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <MultiTrigger>
+              <MultiTrigger.Conditions>
+                <Condition Property="IsSelected" Value="True" />
+                <Condition Property="Selector.IsSelectionActive" Value="False" />
+              </MultiTrigger.Conditions>
+              <!-- Dimmed selection when the ListBox doesn't have focus
+                   so the user can still see "what's picked" without the
+                   row screaming. -->
+              <Setter TargetName="Root" Property="Background" Value="{DynamicResource SurfaceLayer2Brush}" />
+            </MultiTrigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDisabledBrush}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="ListListBox" TargetType="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceStrongBrush}" />
+    <Setter Property="FontFamily" Value="{DynamicResource FontPrimary}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="ItemContainerStyle" Value="{StaticResource ListListBoxItem}" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="SnapsToDevicePixels" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListBox">
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="6"
+                  SnapsToDevicePixels="True">
+            <ScrollViewer Padding="{TemplateBinding Padding}"
+                          Focusable="False">
+              <ItemsPresenter SnapsToDevicePixels="True" />
+            </ScrollViewer>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

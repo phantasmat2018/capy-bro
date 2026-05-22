@@ -1,0 +1,34 @@
+<Application x:Class="CapyBro.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!--
+          MergedDictionaries[0] is the active palette. Runtime theme
+          swap (Phase D / IThemeService) replaces this entry with
+          Themes/Colors.Light.xaml when the user selects Light or when
+          system theme resolves to Light. Default Dark preserves the
+          current visual state until the theme switcher lands; per
+          project_design_guide.md §13.3 the eventual default for new
+          users is System.
+        -->
+        <ResourceDictionary Source="Themes/Colors.Dark.xaml" />
+        <ResourceDictionary Source="Themes/Tokens.xaml" />
+        <ResourceDictionary Source="Themes/Typography.xaml" />
+        <ResourceDictionary Source="Themes/Spacing.xaml" />
+        <ResourceDictionary Source="Themes/Icons.xaml" />
+        <ResourceDictionary Source="Themes/Buttons.xaml" />
+        <ResourceDictionary Source="Themes/Inputs.xaml" />
+        <ResourceDictionary Source="Themes/Lists.xaml" />
+        <ResourceDictionary Source="Themes/Cards.xaml" />
+        <ResourceDictionary Source="Themes/CheckBox.xaml" />
+        <ResourceDictionary Source="Themes/Toast.xaml" />
+        <ResourceDictionary Source="Themes/Tooltips.xaml" />
+        <ResourceDictionary Source="Themes/Menus.xaml" />
+        <ResourceDictionary Source="Themes/Motion.xaml" />
+        <ResourceDictionary Source="Themes/ScrollBars.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

@@ -1,0 +1,1180 @@
+<UserControl x:Class="CapyBro.Views.GeneralTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CapyBro.Controls"
+             xmlns:services="clr-namespace:CapyBro.Services">
+
+  <UserControl.Resources>
+    <!-- Built-in: collapses elements when bound bool is false. Used to
+         hide the balance row when the credits/cost experiment is off. -->
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+    <!-- SectionCard / SectionCardBeta / SectionCardDanger /
+         SectionAccentStrip are now app-wide via Themes/Cards.xaml in
+         App.xaml MergedDictionaries — PromptsTab uses the same idiom,
+         duplicating the styles in two UserControl.Resources blocks
+         risked drift. -->
+  </UserControl.Resources>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
+
+    <!--
+      Vertical card stack.  Grid.IsSharedSizeScope=True propagates the
+      "Labels" SharedSizeGroup down through every nested card grid so
+      the column-0 label widths align across cards (Language / API
+      key / Model / Hotkey / Menu hotkey / Undo hotkey share one
+      computed column width even though each card owns its own
+      Grid).  Without this scope, every grid would size its labels
+      independently and the form would look ragged.
+
+      Margin 0,16 between cards (via per-card Margin="0,16,0,0") gives
+      the §5.1 16-px rhythm; the first card has Margin=0 so it sits
+      flush with the ScrollViewer's 24-px Padding.
+    -->
+    <StackPanel Grid.IsSharedSizeScope="True">
+
+      <!-- ==================== Provider card ==================== -->
+      <!-- LLM-backend choice: OpenRouter (cloud, pay-as-you-go) or
+           Ollama (local, free, on-device).  Sits before Profile so the
+           selection determines which sub-rows of Profile and which
+           extra Ollama card are visible — minimal cognitive load for
+           the user (one switch, the rest of the form adapts).
+           v15: visible only when the local Ollama endpoint responds
+           at startup (or a successful refresh) — users without Ollama
+           installed don't see a toggle they can't use.  Initial
+           IsOllamaAvailable=false hides the card during the brief
+           probe window so there's no flash-and-collapse. -->
+      <!-- Margin="0,0,0,16": when Provider card is visible it owns
+           the 16-px gap to the Profile card below; when Visibility=
+           Collapsed the whole border (margin included) is removed
+           from layout, so the Profile card sits flush against the
+           ScrollViewer padding instead of leaving a 16-px ghost
+           gap.  Profile keeps Margin="0" because the spacing is
+           now owned by Provider's bottom margin. -->
+      <Border Style="{StaticResource SectionCard}"
+              Margin="0,0,0,16"
+              Visibility="{Binding IsOllamaAvailable, Converter={StaticResource BoolToVisibility}}">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Border Style="{StaticResource SectionAccentStrip}" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[general_section_provider]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center" />
+            <controls:HelpIcon HintText="{Binding Source={x:Static services:Translator.Instance}, Path=[help_provider]}"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Single CheckBox for a binary toggle — matches the rest
+               of the app's checkbox-driven settings (Autostart,
+               Experimental features, etc.) rather than introducing
+               radio styling that didn't exist elsewhere.  Checked =
+               Ollama (local); unchecked = OpenRouter (cloud / the
+               default).  TwoWay bound to the VM's UseOllama bool,
+               which maps to/from <see cref="LlmProviderKind"/> in
+               OnUseOllamaChanged. -->
+          <!-- Checkbox + inline "checking..." spinner.  When the user
+               toggles Ollama ON, the VM kicks off a /api/tags probe
+               (ProbeOllamaThenPersistAsync); IsCheckingOllamaConnection
+               flips true for the duration so the spinner appears
+               next to the label.  On failure the toggle reverts and
+               a localised toast surfaces. -->
+          <StackPanel Orientation="Horizontal">
+            <CheckBox Style="{StaticResource DefaultCheckBox}"
+                      Content="{Binding Source={x:Static services:Translator.Instance}, Path=[provider_use_ollama]}"
+                      IsChecked="{Binding UseOllama, Mode=TwoWay}"
+                      VerticalAlignment="Center" />
+            <Path Data="{StaticResource Icon.Loader2}"
+                  Stroke="{DynamicResource OnSurfaceMutedBrush}"
+                  StrokeThickness="1.5"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  Width="14" Height="14"
+                  Stretch="Uniform"
+                  Margin="8,0,0,0"
+                  VerticalAlignment="Center"
+                  RenderTransformOrigin="0.5,0.5"
+                  Visibility="{Binding IsCheckingOllamaConnection, Converter={StaticResource BoolToVisibility}}">
+              <Path.RenderTransform>
+                <RotateTransform x:Name="OllamaProbeRotate" Angle="0" />
+              </Path.RenderTransform>
+              <Path.Triggers>
+                <EventTrigger RoutedEvent="Loaded">
+                  <BeginStoryboard>
+                    <Storyboard>
+                      <DoubleAnimation Storyboard.TargetName="OllamaProbeRotate"
+                                       Storyboard.TargetProperty="Angle"
+                                       From="0" To="360"
+                                       Duration="0:0:1"
+                                       RepeatBehavior="Forever" />
+                    </Storyboard>
+                  </BeginStoryboard>
+                </EventTrigger>
+              </Path.Triggers>
+            </Path>
+          </StackPanel>
+
+          <TextBlock Style="{DynamicResource TypeCaption}"
+                     Text="{Binding Source={x:Static services:Translator.Instance}, Path=[provider_hint]}"
+                     TextWrapping="Wrap"
+                     Margin="0,8,0,0" />
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== Profile card ==================== -->
+      <!-- Language, API key, Model — the identity / connection trio.
+           API key + Model rows are visibility-bound to IsOpenRouterProvider
+           so users on Ollama don't see (or have to look at) fields
+           that don't apply to them — the Ollama equivalents live in
+           the dedicated card below.
+           No top margin: the 16-px gap to the (optional) Provider
+           card above is owned by Provider's bottom margin so the
+           layout has zero ghost-gap when Provider is collapsed. -->
+      <Border Style="{StaticResource SectionCard}">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Border Style="{StaticResource SectionAccentStrip}" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[general_section_profile]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="Labels" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Language -->
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[language]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,0,16,0"
+                       VerticalAlignment="Center" />
+            <!-- H23 (FZ4-F2) fix: items render their autonym (English /
+                 Українська / Русский) via an explicit ItemTemplate.
+                 `DisplayMemberPath` + `SelectedValuePath` together did
+                 not propagate to the InputComboBox custom template's
+                 SelectionBoxItem ContentPresenter (live-verified —
+                 collapsed view showed the raw record ToString).
+                 SelectedValuePath keeps the bound VM property as the
+                 raw Language enum, so storage/wire format is unchanged. -->
+            <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4"
+                      Style="{StaticResource InputComboBox}"
+                      ItemsSource="{Binding AvailableLanguages}"
+                      SelectedValuePath="Value"
+                      SelectedValue="{Binding Language, Mode=TwoWay}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <!-- API key with eye-toggle.  Provider-gated: only visible
+                 when OpenRouter is selected; Ollama doesn't use a key. -->
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[api_key]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,16,16,0"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}" />
+            <controls:RevealablePasswordBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4"
+                                            Password="{Binding ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            SecretSequenceTriggered="OnSecretSequenceTriggered"
+                                            Margin="0,16,0,0"
+                                            Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}" />
+
+            <!--
+              API-key sub-row.  Three logical chunks:
+                • Validation indicator on the left (icon + status
+                  text) — visible only when ApiKeyState != None,
+                  driven by four mutually-exclusive computed bools
+                  on the VM (IsApiKeyChecking / IsApiKeyValid /
+                  IsApiKeyInvalid / IsApiKeyNetworkError).
+                • Spacer (Width=*) so the OpenRouter link always
+                  parks on the right edge regardless of indicator
+                  width.
+                • OpenRouter signup hyperlink — always present so
+                  the "where do I get a key?" affordance never
+                  disappears even after the user has a valid one.
+
+              Why four separate alternative StackPanels instead of
+              one row whose icon swaps via DataTrigger: WPF Path's
+              Data isn't a value-converter target out of the box,
+              and a per-state Setter chain would need an enum-aware
+              converter.  Four [Visibility]-bound rows is the
+              least-XAML-magic way to pick the right (icon + tinted
+              brush + caption) tuple per state.
+            -->
+            <Grid Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4"
+                  Margin="0,6,0,0"
+                  Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+
+              <!-- Checking: muted Loader2 with a 1-second forever
+                   rotation, plus localised "Checking key..." text.
+                   RotateTransform CenterX/CenterY at glyph centre
+                   (16/2 = 8) so the spinner rotates in place
+                   rather than orbiting. -->
+              <StackPanel Grid.Column="0"
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center"
+                          Visibility="{Binding IsApiKeyChecking, Converter={StaticResource BoolToVisibility}}">
+                <Path Data="{StaticResource Icon.Loader2}"
+                      Stroke="{DynamicResource OnSurfaceMutedBrush}"
+                      StrokeThickness="1.8"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Width="14" Height="14"
+                      Stretch="Uniform"
+                      VerticalAlignment="Center"
+                      RenderTransformOrigin="0.5,0.5">
+                  <Path.RenderTransform>
+                    <RotateTransform x:Name="LoaderRotate" Angle="0" />
+                  </Path.RenderTransform>
+                  <Path.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                      <BeginStoryboard>
+                        <Storyboard>
+                          <DoubleAnimation Storyboard.TargetName="LoaderRotate"
+                                           Storyboard.TargetProperty="Angle"
+                                           From="0" To="360"
+                                           Duration="0:0:1"
+                                           RepeatBehavior="Forever" />
+                        </Storyboard>
+                      </BeginStoryboard>
+                    </EventTrigger>
+                  </Path.Triggers>
+                </Path>
+                <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[api_key_status_checking]}"
+                           Style="{DynamicResource TypeCaption}"
+                           Margin="6,0,0,0"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- Valid: green Check + "Key is valid" caption. -->
+              <StackPanel Grid.Column="0"
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center"
+                          Visibility="{Binding IsApiKeyValid, Converter={StaticResource BoolToVisibility}}">
+                <Path Data="{StaticResource Icon.Check}"
+                      Stroke="{DynamicResource StatusSuccessBrush}"
+                      StrokeThickness="2"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Width="14" Height="14"
+                      Stretch="Uniform"
+                      VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[api_key_status_valid]}"
+                           Style="{DynamicResource TypeCaption}"
+                           Foreground="{DynamicResource StatusSuccessBrush}"
+                           Margin="6,0,0,0"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- Invalid: red X + "Key is invalid" caption.
+                   Uses StatusErrorBrush for both glyph and text so
+                   the row reads as a hard-error affordance the
+                   user can't miss. -->
+              <StackPanel Grid.Column="0"
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center"
+                          Visibility="{Binding IsApiKeyInvalid, Converter={StaticResource BoolToVisibility}}">
+                <Path Data="{StaticResource Icon.X}"
+                      Stroke="{DynamicResource StatusErrorBrush}"
+                      StrokeThickness="2"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Width="14" Height="14"
+                      Stretch="Uniform"
+                      VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[api_key_status_invalid]}"
+                           Style="{DynamicResource TypeCaption}"
+                           Foreground="{DynamicResource StatusErrorBrush}"
+                           Margin="6,0,0,0"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- Network error: muted AlertTriangle + "Couldn't
+                   verify" caption.  Muted (not error-tinted) on
+                   purpose: we don't know the key is bad, just
+                   that the network call failed; tinting it red
+                   would push the user to re-paste a probably-
+                   fine key. -->
+              <StackPanel Grid.Column="0"
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center"
+                          Visibility="{Binding IsApiKeyNetworkError, Converter={StaticResource BoolToVisibility}}">
+                <Path Data="{StaticResource Icon.AlertTriangle}"
+                      Stroke="{DynamicResource OnSurfaceMutedBrush}"
+                      StrokeThickness="1.8"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Width="14" Height="14"
+                      Stretch="Uniform"
+                      VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[api_key_status_network]}"
+                           Style="{DynamicResource TypeCaption}"
+                           Margin="6,0,0,0"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- OpenRouter signup hyperlink: clickable link to
+                   the registration page.  Always rendered on the
+                   right column so it's a stable affordance even
+                   after the user has a valid key. -->
+              <TextBlock Grid.Column="2"
+                         Style="{DynamicResource TypeCaption}"
+                         VerticalAlignment="Center">
+                <Hyperlink NavigateUri="https://openrouter.ai/"
+                           RequestNavigate="OnOpenRouterLinkClick"
+                           Foreground="{DynamicResource BrandPrimaryBrush}">
+                  <Run Text="{Binding Source={x:Static services:Translator.Instance}, Path=[api_key_hint], Mode=OneWay}" />
+                </Hyperlink>
+              </TextBlock>
+            </Grid>
+
+            <!-- Model: combo + +/trash/browse icon buttons.
+                 The label is wrapped in a horizontal StackPanel so a
+                 (?) icon can sit immediately after the word "Model"
+                 — the row has three icon buttons after the input
+                 (Plus / Trash / Browse) whose meaning isn't
+                 self-evident; the help-icon hint summarises all
+                 three plus the expected id format ("openai/gpt-4o-mini"). -->
+            <StackPanel Grid.Row="3" Grid.Column="0"
+                        Orientation="Horizontal"
+                        Margin="0,16,16,0"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}">
+              <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[model]}"
+                         Style="{DynamicResource TypeBodyStrong}"
+                         VerticalAlignment="Center" />
+              <controls:HelpIcon HintText="{Binding Source={x:Static services:Translator.Instance}, Path=[help_model]}"
+                                 Margin="6,0,0,0"
+                                 VerticalAlignment="Center" />
+            </StackPanel>
+            <ComboBox Grid.Row="3" Grid.Column="1"
+                      Style="{StaticResource InputComboBox}"
+                      ItemsSource="{Binding Models}"
+                      Text="{Binding SelectedModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      IsEditable="True"
+                      Margin="0,16,0,0"
+                      Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}" />
+            <Button Grid.Row="3" Grid.Column="2"
+                    Style="{StaticResource ButtonIconOnly}"
+                    Command="{Binding AddModelCommand}"
+                    CommandParameter="{Binding SelectedModel}"
+                    ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_add_model]}"
+                    AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_add_model]}"
+                    Margin="8,16,0,0"
+                    Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}">
+              <Path Data="{StaticResource Icon.Plus}"
+                    Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+                    StrokeThickness="1.5"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"
+                    StrokeLineJoin="Round"
+                    Width="16" Height="16"
+                    Stretch="Uniform" />
+            </Button>
+            <Button Grid.Row="3" Grid.Column="3"
+                    Style="{StaticResource ButtonIconOnly}"
+                    Command="{Binding RemoveSelectedModelCommand}"
+                    ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_remove_model]}"
+                    AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_remove_model]}"
+                    Margin="4,16,0,0"
+                    Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}">
+              <Path Data="{StaticResource Icon.Trash2}"
+                    Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+                    StrokeThickness="1.5"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"
+                    StrokeLineJoin="Round"
+                    Width="16" Height="16"
+                    Stretch="Uniform" />
+            </Button>
+            <Button Grid.Row="3" Grid.Column="4"
+                    Style="{StaticResource ButtonIconOnly}"
+                    Command="{Binding BrowseModelsCommand}"
+                    ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_browse_models]}"
+                    AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_browse_models]}"
+                    Margin="4,16,0,0"
+                    Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}">
+              <!--
+                Two layered glyphs in a Grid: the static cloud icon
+                renders by default; when IsBrowsingModels=True the
+                spinner takes over.  Layered (rather than swap-via-
+                DataTrigger-Setter) because Path.Data isn't trivially
+                bindable through a Setter chain — toggling Visibility
+                on alternate Paths is the simplest way to keep the
+                switch declarative.  RotateTransform + EventTrigger
+                Loaded gives a forever rotation; cheap when the spinner
+                is collapsed because WPF doesn't render invisible
+                elements.
+              -->
+              <Grid>
+                <!--
+                  Cloud glyph: visible by default, hidden via Style
+                  DataTrigger when IsBrowsingModels=True.  Inline
+                  Style (not a shared resource) because the trigger
+                  binding is specific to the bound VM property and
+                  the brush/stroke are already inherited.
+                -->
+                <Path Data="{StaticResource Icon.DownloadCloud}"
+                      StrokeThickness="1.5"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Width="16" Height="16"
+                      Stretch="Uniform">
+                  <Path.Style>
+                    <Style TargetType="Path">
+                      <Setter Property="Stroke" Value="{DynamicResource OnSurfaceDefaultBrush}" />
+                      <Setter Property="Visibility" Value="Visible" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsBrowsingModels}" Value="True">
+                          <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Path.Style>
+                </Path>
+                <!--
+                  Spinner: visible only when IsBrowsingModels=True.
+                  Loaded once at app startup so the Storyboard runs
+                  forever; layout cost is zero while collapsed.
+                -->
+                <Path Data="{StaticResource Icon.Loader2}"
+                      Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+                      StrokeThickness="1.8"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Width="16" Height="16"
+                      Stretch="Uniform"
+                      RenderTransformOrigin="0.5,0.5"
+                      Visibility="{Binding IsBrowsingModels, Converter={StaticResource BoolToVisibility}}">
+                  <Path.RenderTransform>
+                    <RotateTransform x:Name="BrowseModelsLoaderRotate" Angle="0" />
+                  </Path.RenderTransform>
+                  <Path.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                      <BeginStoryboard>
+                        <Storyboard>
+                          <DoubleAnimation Storyboard.TargetName="BrowseModelsLoaderRotate"
+                                           Storyboard.TargetProperty="Angle"
+                                           From="0" To="360"
+                                           Duration="0:0:1"
+                                           RepeatBehavior="Forever" />
+                        </Storyboard>
+                      </BeginStoryboard>
+                    </EventTrigger>
+                  </Path.Triggers>
+                </Path>
+              </Grid>
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== Local models (Ollama) card ==================== -->
+      <!-- Only renders when Provider=Ollama.  Two rows: an editable
+           endpoint TextBox (lets a power user point at a remote Ollama
+           on their LAN) and a model picker driven by GET /api/tags.
+           Refresh button re-pulls the tag list so a user who just ran
+           `ollama pull <name>` doesn't need to restart the app to see
+           the new model. -->
+      <Border Style="{StaticResource SectionCard}" Margin="0,16,0,0"
+              Visibility="{Binding IsOllamaProvider, Converter={StaticResource BoolToVisibility}}">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Border Style="{StaticResource SectionAccentStrip}" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[general_section_ollama]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center" />
+            <controls:HelpIcon HintText="{Binding Source={x:Static services:Translator.Instance}, Path=[help_ollama]}"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center" />
+          </StackPanel>
+
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="Labels" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Endpoint TextBox.  No live validation — the next request
+                 either resolves the host or surfaces the ollama_unreachable
+                 toast.  Persisted via OnOllamaEndpointChanged immediately
+                 on edit so a quit after typing doesn't lose the value. -->
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[ollama_endpoint]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,0,16,0"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                     Style="{StaticResource InputTextBox}"
+                     Text="{Binding OllamaEndpoint, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+
+            <!-- Model picker + Refresh button.  ComboBox is editable so
+                 a power user can type a tag they know exists but haven't
+                 yet refreshed (e.g. just-pulled mid-session); the
+                 dropdown still seeds from the cached tags list. -->
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[model]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,16,16,0"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Row="1" Grid.Column="1"
+                      Style="{StaticResource InputComboBox}"
+                      ItemsSource="{Binding OllamaModels}"
+                      Text="{Binding SelectedOllamaModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      IsEditable="True"
+                      Margin="0,16,0,0" />
+            <Button Grid.Row="1" Grid.Column="2"
+                    Style="{StaticResource ButtonIconOnly}"
+                    Command="{Binding RefreshOllamaModelsCommand}"
+                    ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_refresh_ollama_models]}"
+                    AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[tooltip_refresh_ollama_models]}"
+                    Margin="8,16,0,0">
+              <!-- Same icon-swap idiom as BrowseModelsCommand: static
+                   glyph hides via a Path.Style DataTrigger (no local
+                   Visibility attribute — the previous version had
+                   both Style setter AND `Visibility="Collapsed"` on
+                   the Loader2 path, and the local value won, so the
+                   spinner never appeared and the button looked empty
+                   during the refresh).  The spinner's Visibility uses
+                   a single direct binding for the same reason. -->
+              <Grid>
+                <Path Data="{StaticResource Icon.RefreshCw}"
+                      StrokeThickness="1.5"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Width="16" Height="16"
+                      Stretch="Uniform">
+                  <Path.Style>
+                    <Style TargetType="Path">
+                      <Setter Property="Stroke" Value="{DynamicResource OnSurfaceDefaultBrush}" />
+                      <Setter Property="Visibility" Value="Visible" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRefreshingOllamaModels}" Value="True">
+                          <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Path.Style>
+                </Path>
+                <!-- Spinner: visible only when IsRefreshingOllamaModels=True.
+                     Loaded once when the Ollama card first becomes
+                     visible so the Storyboard runs forever; layout
+                     cost is zero while collapsed. -->
+                <Path Data="{StaticResource Icon.Loader2}"
+                      Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+                      StrokeThickness="1.5"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Width="16" Height="16"
+                      Stretch="Uniform"
+                      RenderTransformOrigin="0.5,0.5"
+                      Visibility="{Binding IsRefreshingOllamaModels, Converter={StaticResource BoolToVisibility}}">
+                  <Path.RenderTransform>
+                    <RotateTransform x:Name="OllamaRefreshRotate" Angle="0" />
+                  </Path.RenderTransform>
+                  <Path.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                      <BeginStoryboard>
+                        <Storyboard>
+                          <DoubleAnimation Storyboard.TargetName="OllamaRefreshRotate"
+                                           Storyboard.TargetProperty="Angle"
+                                           From="0" To="360"
+                                           Duration="0:0:1"
+                                           RepeatBehavior="Forever" />
+                        </Storyboard>
+                      </BeginStoryboard>
+                    </EventTrigger>
+                  </Path.Triggers>
+                </Path>
+              </Grid>
+            </Button>
+          </Grid>
+
+          <!-- The brand word "Ollama" is itself the clickable
+               Hyperlink in the middle of the hint sentence.  Prefix
+               + suffix come from translator keys; the brand text is
+               hardcoded because it doesn't translate.  Click routes
+               through OnOpenRouterLinkClick — the handler is
+               provider-agnostic despite the legacy name (opens any
+               http(s) URI via the OS shell). -->
+          <TextBlock Style="{DynamicResource TypeCaption}"
+                     TextWrapping="Wrap"
+                     Margin="0,12,0,0">
+            <Run Text="{Binding Source={x:Static services:Translator.Instance}, Path=[ollama_hint_prefix], Mode=OneWay}" />
+            <Hyperlink NavigateUri="https://ollama.com"
+                       RequestNavigate="OnOpenRouterLinkClick"
+                       Foreground="{DynamicResource BrandPrimaryBrush}">
+              <Run Text="Ollama" />
+            </Hyperlink>
+            <Run Text="{Binding Source={x:Static services:Translator.Instance}, Path=[ollama_hint_suffix], Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== Hotkeys card ==================== -->
+      <!-- Improvement / Menu / Undo hotkeys.  Distinct from Profile
+           because they're keyboard wiring, not identity — separating
+           them lets us add per-section help inline in the future
+           without crowding the API-key card.
+
+           Phase E iteration 2: HotkeyChipsDisplay rows under each
+           ComboBox were removed per user feedback ("прибери позначки
+           горячих клавіш, вони лишні") — the editable ComboBox
+           already shows the canonical text ("Ctrl+Shift+E") and the
+           chip-preview row was visually noisy without earning its
+           keep.  HotkeyChipsDisplay control deleted from
+           Controls/.  Help icon next to the heading still covers
+           the "what's a valid combo / why was my edit rejected"
+           knowledge gap. -->
+      <Border Style="{StaticResource SectionCard}" Margin="0,16,0,0">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Border Style="{StaticResource SectionAccentStrip}" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[general_section_hotkeys]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center" />
+            <!-- Help icon: hotkey format and conflict rules aren't
+                 obvious from the input row alone (the user only
+                 finds out about uniqueness validation by tripping
+                 the toast); a (?) right next to the heading makes
+                 the behavioural contract discoverable up-front. -->
+            <controls:HelpIcon HintText="{Binding Source={x:Static services:Translator.Instance}, Path=[help_hotkeys]}"
+                               Margin="6,0,0,0"
+                               VerticalAlignment="Center" />
+          </StackPanel>
+
+          <Grid>
+            <Grid.Resources>
+              <!--
+                FZ2-F3 / M33 — shared style for the per-slot conflict
+                glyph.  Visibility is Collapsed by default; a non-empty
+                ConflictMessage flips it to Visible via the DataTrigger
+                in the consumer below (the binding context differs per
+                row, so the DataTrigger lives at the use-site rather
+                than here).  Tag is repurposed by the consumer to carry
+                the message binding for ToolTip wiring.
+              -->
+              <Style x:Key="HotkeyConflictGlyph" TargetType="Path">
+                <Setter Property="Stroke" Value="{DynamicResource StatusWarningBrush}" />
+                <Setter Property="StrokeThickness" Value="1.5" />
+                <Setter Property="StrokeStartLineCap" Value="Round" />
+                <Setter Property="StrokeEndLineCap" Value="Round" />
+                <Setter Property="StrokeLineJoin" Value="Round" />
+                <Setter Property="Fill" Value="Transparent" />
+                <Setter Property="Width" Value="16" />
+                <Setter Property="Height" Value="16" />
+                <Setter Property="Stretch" Value="Uniform" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Data" Value="{DynamicResource Icon.AlertTriangle}" />
+              </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="Labels" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Hotkey -->
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[hotkey]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,0,16,0"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Row="0" Grid.Column="1"
+                      Style="{StaticResource InputComboBox}"
+                      Text="{Binding Hotkey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                      IsEditable="True">
+              <ComboBoxItem>Ctrl+Shift+E</ComboBoxItem>
+              <ComboBoxItem>Ctrl+Shift+I</ComboBoxItem>
+              <ComboBoxItem>Ctrl+Alt+I</ComboBoxItem>
+            </ComboBox>
+            <Path Grid.Row="0" Grid.Column="2"
+                  Margin="8,0,0,0"
+                  ToolTip="{Binding HotkeyConflictMessage}">
+              <Path.Style>
+                <Style TargetType="Path" BasedOn="{StaticResource HotkeyConflictGlyph}">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding HotkeyConflictMessage, Converter={x:Static services:NullToFalseConverter.Instance}}" Value="True">
+                      <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Path.Style>
+            </Path>
+
+            <!-- Menu hotkey -->
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[menu_hotkey]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,16,16,0"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Row="1" Grid.Column="1"
+                      Style="{StaticResource InputComboBox}"
+                      Text="{Binding MenuHotkey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                      IsEditable="True"
+                      Margin="0,16,0,0">
+              <ComboBoxItem>Ctrl+Shift+Q</ComboBoxItem>
+              <ComboBoxItem>Ctrl+Shift+M</ComboBoxItem>
+              <ComboBoxItem>Ctrl+Alt+M</ComboBoxItem>
+            </ComboBox>
+            <Path Grid.Row="1" Grid.Column="2"
+                  Margin="8,16,0,0"
+                  ToolTip="{Binding MenuHotkeyConflictMessage}">
+              <Path.Style>
+                <Style TargetType="Path" BasedOn="{StaticResource HotkeyConflictGlyph}">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding MenuHotkeyConflictMessage, Converter={x:Static services:NullToFalseConverter.Instance}}" Value="True">
+                      <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Path.Style>
+            </Path>
+
+            <!-- Undo hotkey (history feature) -->
+            <TextBlock Grid.Row="2" Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[history_undo_hotkey]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       Margin="0,16,16,0"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Row="2" Grid.Column="1"
+                      Style="{StaticResource InputComboBox}"
+                      Text="{Binding UndoHotkey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                      IsEditable="True"
+                      Margin="0,16,0,0">
+              <ComboBoxItem>Ctrl+Shift+Z</ComboBoxItem>
+              <ComboBoxItem>Ctrl+Alt+Z</ComboBoxItem>
+              <ComboBoxItem>Ctrl+Shift+U</ComboBoxItem>
+            </ComboBox>
+            <Path Grid.Row="2" Grid.Column="2"
+                  Margin="8,16,0,0"
+                  ToolTip="{Binding UndoHotkeyConflictMessage}">
+              <Path.Style>
+                <Style TargetType="Path" BasedOn="{StaticResource HotkeyConflictGlyph}">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding UndoHotkeyConflictMessage, Converter={x:Static services:NullToFalseConverter.Instance}}" Value="True">
+                      <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Path.Style>
+            </Path>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== System card ==================== -->
+      <!-- OS-integration toggles.  Today this is just Autostart, but
+           the section is the natural home for future "minimize to
+           tray on startup" / "single-instance" / "log level" kinds
+           of switches. -->
+      <Border Style="{StaticResource SectionCard}" Margin="0,16,0,0">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Border Style="{StaticResource SectionAccentStrip}" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[general_section_system]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <CheckBox Style="{StaticResource DefaultCheckBox}"
+                    Content="{Binding Source={x:Static services:Translator.Instance}, Path=[autostart]}"
+                    IsChecked="{Binding AutostartEnabled, Mode=TwoWay}" />
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== Additional features card ==================== -->
+      <!-- Experimental flags that have graduated to the regular surface.
+           Two-column layout for the six toggles per the user's request.
+           Order across columns: left-to-right, top-to-bottom — keeps the
+           original visual ordering (diff → streaming → per-prompt-model
+           in the left column; costs → privacy → history in the right). -->
+      <Border Style="{StaticResource SectionCard}" Margin="0,16,0,0">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Border Style="{StaticResource SectionAccentStrip}" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_features_section]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center" />
+            <!-- Help icon: each toggle has its own ToolTip on hover,
+                 but the section as a whole benefits from a one-line
+                 framing ("these are optional") so a new user knows
+                 they can ignore the whole block until they need
+                 something specific. -->
+            <controls:HelpIcon HintText="{Binding Source={x:Static services:Translator.Instance}, Path=[help_additional_features]}"
+                               Margin="6,0,0,0"
+                               VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- 2-column layout via nested StackPanels so that hiding
+               OpenRouter-only toggles (cost estimate, privacy
+               redaction) on Ollama collapses the rows naturally —
+               sibling toggles below flow up.  Previous Grid layout
+               left visible gaps because Grid.Row positions are
+               fixed; a Collapsed item in row 1 didn't pull row 2
+               upward. -->
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+              <CheckBox Style="{StaticResource DefaultCheckBox}"
+                        Content="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_diff_preview]}"
+                        IsChecked="{Binding ExperimentalDiffPreview, Mode=TwoWay}"
+                        ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_diff_preview_hint]}"
+                        Margin="0,0,0,8" />
+
+              <CheckBox Style="{StaticResource DefaultCheckBox}"
+                        Content="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_streaming]}"
+                        IsChecked="{Binding ExperimentalStreaming, Mode=TwoWay}"
+                        ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_streaming_hint]}"
+                        Margin="0,0,0,8" />
+
+              <CheckBox Style="{StaticResource DefaultCheckBox}"
+                        Content="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_per_prompt_model]}"
+                        IsChecked="{Binding ExperimentalPerPromptModel, Mode=TwoWay}"
+                        ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_per_prompt_model_hint]}"
+                        Margin="0,0,0,8" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1">
+              <!-- OpenRouter-only: cost estimate + credits balance
+                   has no Ollama analogue (local models don't bill).
+                   Hidden entirely when Provider=Ollama. -->
+              <CheckBox Style="{StaticResource DefaultCheckBox}"
+                        Content="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_costs_and_credits]}"
+                        IsChecked="{Binding ExperimentalCostsAndCredits, Mode=TwoWay}"
+                        ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_costs_and_credits_hint]}"
+                        Margin="0,0,0,8"
+                        Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}" />
+
+              <!-- OpenRouter-only: PII redaction defends against
+                   data leaving the machine.  Ollama runs locally so
+                   nothing leaves regardless — the toggle would add
+                   noise (and degrade output quality for smaller
+                   local models that handle placeholder tokens
+                   poorly) without any privacy benefit. -->
+              <CheckBox Style="{StaticResource DefaultCheckBox}"
+                        Content="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_privacy_redaction]}"
+                        IsChecked="{Binding ExperimentalPrivacyRedaction, Mode=TwoWay}"
+                        ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_privacy_redaction_hint]}"
+                        Margin="0,0,0,8"
+                        Visibility="{Binding IsOpenRouterProvider, Converter={StaticResource BoolToVisibility}}" />
+
+              <CheckBox Style="{StaticResource DefaultCheckBox}"
+                        Content="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_history]}"
+                        IsChecked="{Binding ExperimentalHistory, Mode=TwoWay}"
+                        ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_history_hint]}"
+                        Margin="0,0,0,8" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Z2-F8 / L4: per-request OpenRouter timeout, exposed in
+               Additional features (relocated from Beta-features in v14
+               so all users — not just dev-mode unlockers — can tune it
+               without hand-editing the JSON).
+
+               Layout: a thin BorderSubtle divider separates the row
+               from the checkbox grid above, mirroring the popover-
+               chrome dividers used elsewhere (PromptPickerWindow header
+               + footer, ConfirmDialog action row).  Label + HelpIcon on
+               the left, narrow numeric input right-aligned — same
+               label-input rhythm as the Hotkey rows in the section
+               above, so the visual cadence stays consistent across the
+               page.
+
+               UpdateSourceTrigger=LostFocus prevents PersistConfig
+               from firing on every keystroke; the clamp in
+               PersistConfigCoreAsync collapses 0 / negative values to
+               AppConfig.Default.Timeout so the user can't break the
+               TextProcessor.CancelAfter contract by typing nonsense. -->
+          <Border BorderBrush="{DynamicResource BorderSubtleBrush}"
+                  BorderThickness="0,1,0,0"
+                  Margin="0,16,0,0"
+                  Padding="0,14,0,0">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0"
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center">
+                <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[timeout_label]}"
+                           Style="{DynamicResource TypeBodyStrong}"
+                           VerticalAlignment="Center" />
+                <controls:HelpIcon HintText="{Binding Source={x:Static services:Translator.Instance}, Path=[timeout_hint]}"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center" />
+              </StackPanel>
+              <!-- v15: bind to EffectiveTimeoutSeconds — a provider-
+                   routed view that surfaces TimeoutSeconds on
+                   OpenRouter and OllamaTimeoutSeconds on Ollama, so
+                   the single visible input always reflects the
+                   active provider's tuning. -->
+              <TextBox Grid.Column="1"
+                       Style="{StaticResource InputTextBox}"
+                       Text="{Binding EffectiveTimeoutSeconds, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Width="96"
+                       TextAlignment="Center" />
+            </Grid>
+          </Border>
+
+          <!-- Balance display row.  Always rendered last in the additional-
+               features card so the running list of feature toggles stays
+               visually contiguous; the balance is the only non-toggle
+               element here.  Shown only while the credits/cost master
+               flag is on; collapses entirely (no gap) when off.  Refresh
+               icon button re-fetches /credits on demand. -->
+          <Grid Margin="0,12,0,0"
+                Visibility="{Binding IsBalanceRowVisible, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[balance_label]}"
+                       Style="{DynamicResource TypeBodyStrong}"
+                       VerticalAlignment="Center" />
+
+            <TextBlock Grid.Column="1"
+                       Text="{Binding BalanceDisplay}"
+                       Foreground="{DynamicResource OnSurfaceMutedBrush}"
+                       VerticalAlignment="Center"
+                       Margin="12,0,0,0"
+                       TextTrimming="CharacterEllipsis" />
+
+            <!-- Re-fetch /credits.  Uses Icon.RefreshCw (circular arrow)
+                 rather than Icon.DownloadCloud — the cloud is already used
+                 for the model-catalogue fetch button at the top of this
+                 page, so reusing it here read as "download something" and
+                 confused users.  Refresh is semantically what this button
+                 does: re-pull the balance from OpenRouter. -->
+            <Button Grid.Column="2"
+                    Style="{StaticResource ButtonIconOnly}"
+                    Command="{Binding RefreshBalanceCommand}"
+                    ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[balance_refresh]}"
+                    AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[balance_refresh]}">
+              <!-- Same layered glyph idiom as the Browse Models
+                   button — RefreshCw glyph by default, swaps to a
+                   spinning Loader2 while IsRefreshingBalance=True
+                   so the user gets feedback during the OpenRouter
+                   round-trip. -->
+              <Grid>
+                <Path Data="{StaticResource Icon.RefreshCw}"
+                      StrokeThickness="1.5"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      StrokeLineJoin="Round"
+                      Width="16" Height="16"
+                      Stretch="Uniform">
+                  <Path.Style>
+                    <Style TargetType="Path">
+                      <Setter Property="Stroke" Value="{DynamicResource OnSurfaceDefaultBrush}" />
+                      <Setter Property="Visibility" Value="Visible" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsRefreshingBalance}" Value="True">
+                          <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </Path.Style>
+                </Path>
+                <Path Data="{StaticResource Icon.Loader2}"
+                      Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+                      StrokeThickness="1.8"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"
+                      Width="16" Height="16"
+                      Stretch="Uniform"
+                      RenderTransformOrigin="0.5,0.5"
+                      Visibility="{Binding IsRefreshingBalance, Converter={StaticResource BoolToVisibility}}">
+                  <Path.RenderTransform>
+                    <RotateTransform x:Name="RefreshBalanceLoaderRotate" Angle="0" />
+                  </Path.RenderTransform>
+                  <Path.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                      <BeginStoryboard>
+                        <Storyboard>
+                          <DoubleAnimation Storyboard.TargetName="RefreshBalanceLoaderRotate"
+                                           Storyboard.TargetProperty="Angle"
+                                           From="0" To="360"
+                                           Duration="0:0:1"
+                                           RepeatBehavior="Forever" />
+                        </Storyboard>
+                      </BeginStoryboard>
+                    </EventTrigger>
+                  </Path.Triggers>
+                </Path>
+              </Grid>
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== Beta features card (developer-mode only) ==================== -->
+      <!-- Visible only when the hidden developer mode is unlocked via
+           the 20-tap eye-icon gesture.  Uses the SectionCardBeta
+           variant (warning-coloured border) plus an AlertTriangle
+           glyph + caption to make it clear this tier is rougher than
+           "Additional features" — same affordance the user already
+           recognises from native OS settings ("Experimental flags",
+           "Insider features"). -->
+      <Border Style="{StaticResource SectionCardBeta}"
+              Margin="0,16,0,0"
+              Visibility="{Binding DeveloperModeEnabled, Converter={StaticResource BoolToVisibility}}">
+        <StackPanel>
+          <!-- Heading row: AlertTriangle + section title side-by-side
+               so the warning icon reads with the heading rather than
+               feeling stranded above it.  StackPanel Orientation=
+               Horizontal because the row is two distinct chunks
+               (icon + text); a single TextBlock with a glyph would
+               require font-icon support we don't bundle. -->
+          <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.AlertTriangle}"
+                  Stroke="{DynamicResource StatusWarningBrush}"
+                  StrokeThickness="1.8"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  StrokeLineJoin="Round"
+                  Width="18" Height="18"
+                  Stretch="Uniform"
+                  VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[beta_features_section]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0" />
+          </StackPanel>
+
+          <!-- Caption row: explains in one line why this section is
+               separated.  TypeCaption (12 px muted) keeps the warning
+               soft; the warning border + glyph above already does the
+               at-a-glance work. -->
+          <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[beta_features_warning]}"
+                     Style="{DynamicResource TypeCaption}"
+                     Margin="0,4,0,12" />
+
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <CheckBox Grid.Row="0" Grid.Column="0"
+                      Style="{StaticResource DefaultCheckBox}"
+                      Content="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_keep_result_selected]}"
+                      IsChecked="{Binding ExperimentalKeepResultSelected, Mode=TwoWay}"
+                      ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[experimental_keep_result_selected_hint]}"
+                      Margin="0,0,16,0" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- ==================== Danger zone card ==================== -->
+      <!-- Houses Reset Settings.  Pre-redesign this lived in the
+           SettingsWindow sidebar's bottom dock — but a destructive
+           CTA permanently visible next to navigation tabs read as
+           "primary action" rather than "use only if necessary",
+           and the user could fat-finger it while reaching for the
+           History tab.  The Danger Zone idiom (cf. GitHub Settings,
+           Vercel project settings) parks reversibility-blocking
+           actions in a visually-distinct, deliberately-out-of-the-
+           way pocket so the user has to choose to land here.
+
+           ResetCommand lives on SettingsWindowViewModel (it
+           orchestrates clearing IConfigStore + ICredentialStore +
+           reloading both child VMs), but this card sits inside
+           GeneralTab whose DataContext is GeneralTabViewModel.
+           AncestorType=Window resolves to the SettingsWindow whose
+           DataContext IS the SettingsWindowViewModel — so we
+           reach the command via DataContext.ResetCommand on the
+           ancestor.  Confirmation flow stays unchanged
+           (ConfirmDialog.Ask inside ResetAsync). -->
+      <Border Style="{StaticResource SectionCardDanger}" Margin="0,24,0,0">
+        <StackPanel>
+          <StackPanel Orientation="Horizontal">
+            <Path Data="{StaticResource Icon.AlertTriangle}"
+                  Stroke="{DynamicResource StatusErrorBrush}"
+                  StrokeThickness="1.8"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  StrokeLineJoin="Round"
+                  Width="18" Height="18"
+                  Stretch="Uniform"
+                  VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[danger_zone_section]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0" />
+          </StackPanel>
+
+          <!-- Hint copy explains exactly what Reset does and what
+               WON'T survive (API key, models).  Per the design
+               guide §6.16 every destructive action surfaces its
+               consequences before the click. -->
+          <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[danger_zone_reset_hint]}"
+                     Style="{DynamicResource TypeCaption}"
+                     TextWrapping="Wrap"
+                     Margin="0,4,0,12" />
+
+          <!-- Button is HorizontalAlignment=Left so it doesn't stretch
+               across the full card width; a destructive CTA the width
+               of the page reads as inviting, the opposite of what we
+               want.  Compact size keeps the action present-but-
+               restrained. -->
+          <Button HorizontalAlignment="Left"
+                  Style="{StaticResource ButtonDestructive}"
+                  Content="{Binding Source={x:Static services:Translator.Instance}, Path=[reset_settings]}"
+                  Command="{Binding DataContext.ResetCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

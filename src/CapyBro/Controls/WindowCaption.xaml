@@ -1,0 +1,186 @@
+<UserControl x:Class="CapyBro.Controls.WindowCaption"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+             xmlns:services="clr-namespace:CapyBro.Services"
+             x:Name="Root"
+             Height="36">
+
+  <!--
+    Custom title bar strip rendered via WPF (not DWM). Win11 22H2
+    silently ignores DwmSetWindowAttribute for caption colour /
+    immersive dark mode for our WPF app, so we paint the chrome
+    ourselves and use shell:WindowChrome on the host Window to opt
+    out of the default OS caption.
+
+    Three DPs surface the caption contract:
+      Title      string  — text shown on the left
+      ShowMinMax bool    — true for resizable Window; false for
+                           fixed-size dialogs
+      ShowTitle  bool    — false when the host already shows its
+                           wordmark elsewhere
+
+    Buttons set WindowChrome.IsHitTestVisibleInChrome=True so they
+    receive clicks rather than being treated as the drag region.
+  -->
+
+  <UserControl.Resources>
+    <!--
+      Shared style for the three caption buttons.  Pre-Z9-F4: each
+      button declared its own inline ControlTemplate (~20 lines × 3 ≈
+      60 lines of duplication) and none of them painted a focus ring
+      on keyboard navigation — Tab-cycling through the host's content
+      jumped through the caption buttons silently, breaking the
+      keyboard-only operability contract.
+
+      The Tag DP carries the hover background brush.  Min/Max inherit
+      the default Layer2 tint; Close overrides Tag inline to the
+      StatusError brush so the Win11 destructive-hover idiom survives.
+      TemplatedParent binding inside the trigger lets a single template
+      serve both colour intents without re-declaring the ControlTemplate.
+
+      Focusable=False is intentional: native Windows title-bar buttons
+      (Min/Max/Close) are NOT part of the keyboard Tab order — pressing
+      Tab in any Win32 app cycles through content controls, never
+      jumping into the caption strip.  An earlier iteration painted a
+      2-px BorderFocus ring on IsKeyboardFocused for accessibility, but
+      that surfaced as a visible violet frame on the Min button after
+      ordinary keyboard navigation (Tab cycle wrapping into the chrome).
+      Matching the native contract — chrome buttons stay mouse-only —
+      removes that visual artefact.  Screen readers can still find the
+      buttons via the UIAutomation tree even though they're skipped by
+      keyboard focus.
+    -->
+    <Style x:Key="WindowCaptionButton" TargetType="Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Tag" Value="{DynamicResource SurfaceLayer2Brush}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Root"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Root" Property="Background"
+                        Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </UserControl.Resources>
+
+  <Border Background="{DynamicResource SurfaceCanvasBrush}"
+          BorderBrush="{DynamicResource BorderSubtleBrush}"
+          BorderThickness="0,0,0,1">
+    <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="Auto" />
+    </Grid.ColumnDefinitions>
+
+    <!--
+      Brand cluster (logo + "CapyBro" wordmark) is always rendered in
+      the upper-left of every window that hosts a WindowCaption — that's
+      the contract the user requested for the rebrand.  The optional
+      <see cref="ShowTitle"/> DP only toggles the per-window subtitle
+      that appears AFTER the brand (e.g. "Reset settings?", "Browse
+      models", "Welcome wizard step indicator"), not the brand itself.
+      Keeps the logo + name visible across Settings, Onboarding, Diff
+      preview, Confirm dialog, Models browser — which is every host
+      that uses this control.
+    -->
+    <StackPanel Grid.Column="0"
+                Orientation="Horizontal"
+                VerticalAlignment="Center"
+                Margin="14,0,0,0">
+      <Image Source="pack://application:,,,/assets/logo.png"
+             Width="18"
+             Height="18"
+             Stretch="Uniform"
+             RenderOptions.BitmapScalingMode="HighQuality"
+             VerticalAlignment="Center" />
+      <TextBlock Text="CapyBro"
+                 Foreground="{DynamicResource OnSurfaceStrongBrush}"
+                 FontFamily="{DynamicResource FontPrimary}"
+                 FontSize="13"
+                 FontWeight="SemiBold"
+                 VerticalAlignment="Center"
+                 Margin="8,0,0,0" />
+      <TextBlock x:Name="TitleText"
+                 Text="{Binding Title, ElementName=Root}"
+                 Foreground="{DynamicResource OnSurfaceMutedBrush}"
+                 FontFamily="{DynamicResource FontPrimary}"
+                 FontSize="13"
+                 VerticalAlignment="Center"
+                 Margin="10,0,0,0" />
+    </StackPanel>
+
+    <StackPanel Grid.Column="1"
+                Orientation="Horizontal"
+                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+
+      <Button x:Name="MinimizeButton"
+              Style="{StaticResource WindowCaptionButton}"
+              Click="OnMinimize"
+              ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[caption_minimize]}"
+              AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[caption_minimize]}">
+        <Path Data="M 0 6 L 10 6"
+              Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+              StrokeThickness="1.2"
+              Width="10"
+              Height="10"
+              Stretch="None"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Center" />
+      </Button>
+
+      <Button x:Name="MaximizeButton"
+              Style="{StaticResource WindowCaptionButton}"
+              Click="OnMaximizeRestore"
+              ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[caption_maximize]}"
+              AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[caption_maximize]}">
+        <Path x:Name="MaximizeGlyph"
+              Data="M 0 0 L 10 0 L 10 10 L 0 10 Z"
+              Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+              StrokeThickness="1.2"
+              Fill="Transparent"
+              Width="10"
+              Height="10"
+              Stretch="None"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Center" />
+      </Button>
+
+      <!-- Close button overrides Tag with the destructive hover brush
+           (Win11 idiom: red wash on hover only for close). -->
+      <Button x:Name="CloseButton"
+              Style="{StaticResource WindowCaptionButton}"
+              Tag="{DynamicResource StatusErrorBrush}"
+              Click="OnClose"
+              ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[caption_close]}"
+              AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[caption_close]}">
+        <Path Data="{DynamicResource Icon.X}"
+              Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+              StrokeThickness="1.5"
+              StrokeStartLineCap="Round"
+              StrokeEndLineCap="Round"
+              Width="10"
+              Height="10"
+              Stretch="Uniform" />
+      </Button>
+    </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

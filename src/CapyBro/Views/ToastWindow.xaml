@@ -1,0 +1,80 @@
+<Window x:Class="CapyBro.Views.ToastWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:services="clr-namespace:CapyBro.Services"
+        Title="AIT Toast"
+        Width="340"
+        SizeToContent="Height"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Background="Transparent"
+        WindowStartupLocation="Manual"
+        ResizeMode="NoResize"
+        Focusable="False">
+  <Border x:Name="OuterBorder"
+          Style="{DynamicResource ToastBorder}">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <Grid Grid.Row="0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- KindIndicator.Background is overridden in code-behind per NotificationKind -->
+        <Border Grid.Column="0"
+                x:Name="KindIndicator"
+                Width="6"
+                CornerRadius="3"
+                Background="{DynamicResource StatusInfoBrush}"
+                Margin="0,0,12,0" />
+        <TextBlock Grid.Column="1"
+                   x:Name="MessageText"
+                   Foreground="{DynamicResource OnSurfaceDefaultBrush}"
+                   FontFamily="{DynamicResource FontPrimary}"
+                   FontSize="14"
+                   TextWrapping="Wrap"
+                   MaxWidth="240"
+                   VerticalAlignment="Center" />
+        <Button Grid.Column="2"
+                x:Name="CancelButton"
+                Style="{StaticResource ButtonIconOnly}"
+                Width="24"
+                Height="24"
+                Margin="12,0,0,0"
+                ToolTip="{Binding Source={x:Static services:Translator.Instance}, Path=[toast_cancel]}"
+                AutomationProperties.Name="{Binding Source={x:Static services:Translator.Instance}, Path=[toast_cancel]}"
+                Visibility="Collapsed"
+                Click="OnCancelClick">
+          <Path Data="{StaticResource Icon.X}"
+                Stroke="{DynamicResource OnSurfaceDefaultBrush}"
+                StrokeThickness="1.5"
+                StrokeStartLineCap="Round"
+                StrokeEndLineCap="Round"
+                StrokeLineJoin="Round"
+                Width="14"
+                Height="14"
+                Stretch="Uniform" />
+        </Button>
+      </Grid>
+
+      <ProgressBar Grid.Row="1"
+                   x:Name="IndeterminateProgress"
+                   IsIndeterminate="True"
+                   Margin="0,12,0,0"
+                   Height="3"
+                   Foreground="{DynamicResource StatusInfoBrush}"
+                   Background="{DynamicResource SurfaceLayer3Brush}"
+                   BorderThickness="0"
+                   Visibility="Collapsed" />
+    </Grid>
+  </Border>
+</Window>

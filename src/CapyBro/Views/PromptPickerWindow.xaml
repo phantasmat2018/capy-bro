@@ -1,0 +1,176 @@
+<Window x:Class="CapyBro.Views.PromptPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:services="clr-namespace:CapyBro.Services"
+        Title="Pick prompt"
+        Width="400"
+        SizeToContent="Height"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        x:Name="Self">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+  </Window.Resources>
+  <Border CornerRadius="8"
+          Background="{DynamicResource SurfaceLayer1Brush}"
+          BorderBrush="{DynamicResource BorderDefaultBrush}"
+          BorderThickness="1"
+          Padding="8"
+          Margin="6">
+    <Border.Effect>
+      <DropShadowEffect ShadowDepth="2" BlurRadius="14" Opacity="0.5" />
+    </Border.Effect>
+
+    <DockPanel LastChildFill="True">
+      <!--
+        Title row: logo + wordmark, identical layout to WindowCaption.xaml
+        so the picker reads as a chrome-less mini-window of the same app
+        rather than a generic "Default prompt" headline.  Replaced the
+        prior `default_prompt` localised string with the brand cluster
+        because the popover already has the keyboard-hint footer below
+        telling the user what the controls do — the title slot is the
+        right place for "you're talking to CapyBro right now."
+
+        Logo size + wordmark typography mirror WindowCaption (18 px
+        logo, FontSize 13 SemiBold) so the two surfaces stay visually
+        coherent when the user sees them side-by-side.
+
+        Wrapped in a Border with a bottom divider line to visually
+        separate the brand header from the prompt list — pre-fix the
+        first list item ("Виправити помилки") ran straight into the
+        wordmark with no breathing room and the header read as just
+        another row.  Same BorderSubtleBrush + 1 px BorderThickness +
+        padding shape as the keyboard-hint footer below, so the two
+        chrome edges of the popover mirror each other.
+      -->
+      <Border DockPanel.Dock="Top"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="0,0,0,1"
+              Margin="0,0,0,4"
+              Padding="8,4,8,10">
+        <!-- Two-column layout: logo + wordmark on the left, active-
+             provider pill on the right edge.  Mirrors the SettingsWindow
+             sidebar footer placement (homepage link left, Ollama pill
+             right) so the indicator surface is consistent across every
+             chrome surface in the app. -->
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Grid.Column="0" Orientation="Horizontal">
+            <Image Source="pack://application:,,,/assets/logo.png"
+                   Width="18"
+                   Height="18"
+                   Stretch="Uniform"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   VerticalAlignment="Center" />
+            <TextBlock Text="CapyBro"
+                       Foreground="{DynamicResource BrandPrimaryBrush}"
+                       FontFamily="{DynamicResource FontPrimary}"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0" />
+          </StackPanel>
+
+          <!-- v15 active-provider indicator.  Same brand-outlined
+               pill pattern as the Settings sidebar footer — visible
+               only when Provider=Ollama so the OpenRouter default
+               case stays untagged.  Bound via ElementName because
+               IsOllamaProvider lives on the Window itself (the
+               picker has no separate VM). -->
+          <Border Grid.Column="2"
+                  BorderBrush="{DynamicResource BrandPrimaryBrush}"
+                  BorderThickness="1"
+                  CornerRadius="3"
+                  Padding="6,1,6,2"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Right"
+                  Visibility="{Binding ElementName=Self, Path=IsOllamaProvider, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="Ollama"
+                       FontFamily="{DynamicResource FontPrimary}"
+                       FontSize="10"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource BrandPrimaryBrush}" />
+          </Border>
+        </Grid>
+      </Border>
+
+      <!--
+        Keyboard-hint footer.  The picker is a hotkey-summoned
+        popover with no visible affordance for "how do I close
+        this" or "Enter to commit" — pre-fix users had to guess,
+        and Deactivate-on-focus-loss only triggered if they
+        clicked outside the window (Esc was undiscoverable).  A
+        muted caption row at the bottom turns these implicit
+        keyboard contracts into explicit copy.
+
+        Border with a subtle top divider separates the hint from
+        the list above so the footer reads as chrome rather than
+        as another row.  Padding mirrors the header's 8,4 so the
+        whole popover stays balanced top-to-bottom.
+      -->
+      <Border DockPanel.Dock="Bottom"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="0,1,0,0"
+              Margin="0,4,0,0"
+              Padding="8,6,8,2">
+        <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[picker_keyboard_hint]}"
+                   Style="{DynamicResource TypeCaption}"
+                   HorizontalAlignment="Center" />
+      </Border>
+
+      <!--
+        ScrollViewer.CanContentScroll="False" — pixel-based smooth scroll
+        instead of item-based.  Default item-based mode scrolls 3 rows
+        per mouse-wheel notch (~108 px at 36-px MinHeight); inside a
+        320-px-max popover that's roughly half the visible area, which
+        feels jumpy.  Pixel mode scrolls by ~48 px/notch — smooth and
+        proportionate to the popover's height.  Identical reasoning and
+        treatment as the ModelsDialog fix (2026-05-12); applied locally
+        rather than on the global ListListBox style so larger lists with
+        explicit virtualization (HistoryTab) keep their item-based
+        behaviour.
+      -->
+      <ListBox x:Name="PromptList"
+               Style="{StaticResource ListListBox}"
+               BorderThickness="0"
+               MaxHeight="320"
+               ScrollViewer.CanContentScroll="False">
+        <!--
+          Explicit ItemTemplate with TextTrimming.  Pre-fix the bound
+          string was rendered via the default ContentPresenter → auto-
+          TextBlock without any trimming directive, so a user-created
+          prompt with a long name ("Перепишіть це формальною
+          канцеляристською мовою з 30-ма іменниками") would push the
+          row width and trigger a horizontal scrollbar — looks broken
+          and the row content gets clipped under the scrollthumb.
+          CharacterEllipsis collapses overflow into a "…" suffix that
+          fits inside the picker's 400-px window without horizontal
+          scroll.
+
+          TextBlock carries its full font-directive set so
+          TypographyEnforcementTests stays green: FontFamily +
+          FontSize + Foreground inherited from the ListBoxItem template
+          would have been allowed, but being explicit keeps the rule
+          local and makes future template-swap regressions visible.
+        -->
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding}"
+                       TextTrimming="CharacterEllipsis"
+                       Style="{DynamicResource TypeBody}" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Border>
+</Window>

@@ -1,0 +1,217 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:services="clr-namespace:CapyBro.Services">
+
+  <!--
+    Shared Cut/Copy/Paste menu for every text input across the app.
+
+    Pre-rebrand: each input wanting a localised + themed right-click menu
+    declared its own ContextMenu inline.  RevealablePasswordBox did
+    this (the "Z9-F6 / L20" iteration), the Hotkey ComboBox / API-key
+    field's editable area did NOT — they fell back to the WPF/Win32
+    system menu, which renders "Вырезать / Копировать / Вставить" with
+    OS-language labels and a light-grey surface that reads as foreign
+    against our dark canvas.
+
+    Centralising here:
+      • One source of truth — locale-bound labels via Translator
+        (menu_cut / menu_copy / menu_paste).
+      • The Inputs.xaml InputTextBox style sets ContextMenu to this
+        resource, so EVERY TextBox using that style inherits the
+        themed menu automatically.
+      • InputComboBox's PART_EditableTextBox sets it explicitly in the
+        ControlTemplate (a TextBox inside a template doesn't pick up
+        the InputTextBox style Setter — needs the per-instance attr).
+
+    Why x:Shared="False":
+      A WPF ContextMenu can only have one Parent at a time.  If two
+      controls share the same instance, attaching the menu to the
+      second one detaches it from the first.  x:Shared="False" makes
+      each {DynamicResource} resolution hand out a fresh instance so
+      every consumer holds its own.  The string literals + binding
+      definitions are tiny so the instance-per-consumer cost is
+      negligible.
+  -->
+  <ContextMenu x:Key="InputCutCopyPasteMenu" x:Shared="False">
+    <MenuItem Header="{Binding Source={x:Static services:Translator.Instance}, Path=[menu_cut]}"
+              Command="ApplicationCommands.Cut"
+              InputGestureText="Ctrl+X" />
+    <MenuItem Header="{Binding Source={x:Static services:Translator.Instance}, Path=[menu_copy]}"
+              Command="ApplicationCommands.Copy"
+              InputGestureText="Ctrl+C" />
+    <MenuItem Header="{Binding Source={x:Static services:Translator.Instance}, Path=[menu_paste]}"
+              Command="ApplicationCommands.Paste"
+              InputGestureText="Ctrl+V" />
+  </ContextMenu>
+
+  <!--
+    Custom styles for ContextMenu / MenuItem / Separator.
+
+    Pre-fix: the right-click "Cut / Copy / Paste" menu inside any
+    TextBox or PasswordBox rendered with the WPF / Win32 default —
+    white surface, black text, bold caption font, left-side check
+    gutter — which against our dark canvas read like a foreign
+    surface plonked into the app.  Same story for the tray icon's
+    "Settings / History / Exit" menu in App.xaml.cs.
+
+    The styles below apply IMPLICITLY (no x:Key on the ContextMenu
+    or MenuItem styles) so EVERY context menu in the app — system-
+    provided text-input ones AND the explicitly-built tray menu —
+    inherits the CapyBro dark surface without per-call edits:
+
+      • Background SurfaceLayer2, OnSurfaceDefault foreground —
+        same triad as Tooltips / Toast / Settings panels.
+      • CornerRadius 6, 1-px subtle border, drop shadow — matches
+        the Tooltips style for a coherent popup language.
+      • Hover row paints SurfaceLayer3, mirroring the SidebarTabButton
+        hover affordance the user already expects.
+      • Disabled rows fade to OnSurfaceDisabled (e.g. "Paste" greys
+        out when clipboard is empty).
+      • Shortcut text (Ctrl+X / Ctrl+C / Ctrl+V) renders in
+        OnSurfaceMuted at the far right with a generous gap from
+        the label, matching the Notepad-style affordance the user
+        is used to but in our muted-secondary tone.
+      • No left-side check gutter — modern context menus omit it
+        unless an item is genuinely toggleable (none of ours are).
+  -->
+
+  <!--
+    The Separator inside a MenuItems collection picks up the style
+    keyed by MenuItem.SeparatorStyleKey, NOT the regular Separator
+    style.  We declare both keys (StaticResource MenuItem.SeparatorStyleKey
+    is a system constant) so the tray menu's
+    `menu.Items.Add(new Separator())` call picks up our custom
+    horizontal-line style instead of the default 3-D groove.
+  -->
+  <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Margin" Value="6,4" />
+    <Setter Property="Background" Value="{DynamicResource BorderSubtleBrush}" />
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Separator">
+          <Rectangle Fill="{TemplateBinding Background}" Height="1" />
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ContextMenu popup container -->
+  <Style TargetType="ContextMenu">
+    <Setter Property="Background" Value="{DynamicResource SurfaceLayer2Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDefaultBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HasDropShadow" Value="True" />
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="SnapsToDevicePixels" Value="True" />
+    <Setter Property="FontFamily" Value="{StaticResource FontPrimary}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ContextMenu">
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="6"
+                  Padding="4"
+                  SnapsToDevicePixels="True">
+            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!--
+    MenuItem template.
+
+    WPF's MenuItem can play four "roles" depending on where it lives:
+    TopLevelHeader / TopLevelItem (in a menu bar — n/a for our app
+    since we have no top-level menu bar), and SubmenuHeader /
+    SubmenuItem (rows inside a dropdown).  This template covers the
+    SubmenuItem role, which is what every TextBox / PasswordBox
+    context menu and the tray menu use.  If we ever introduce nested
+    submenus we'd need a separate trigger for the SubmenuHeader role
+    that adds a chevron — not relevant today, kept simple.
+  -->
+  <Style TargetType="MenuItem">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDefaultBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="FontFamily" Value="{StaticResource FontPrimary}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="SnapsToDevicePixels" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="MenuItem">
+          <Border x:Name="Root"
+                  Background="{TemplateBinding Background}"
+                  Padding="{TemplateBinding Padding}"
+                  CornerRadius="4"
+                  SnapsToDevicePixels="True">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+
+              <!--
+                Header column.  RecognizesAccessKey so an underlined
+                "_C" in a label still works as Alt+C even though the
+                whole thing is wrapped in our template.  TextElement
+                .Foreground forwards the parent Foreground so disabled
+                + hover states cascade through the ContentPresenter's
+                auto-generated TextBlock.
+              -->
+              <ContentPresenter Grid.Column="0"
+                                ContentSource="Header"
+                                RecognizesAccessKey="True"
+                                VerticalAlignment="Center"
+                                TextElement.Foreground="{TemplateBinding Foreground}"
+                                SnapsToDevicePixels="True" />
+
+              <!--
+                Shortcut text (InputGestureText, e.g. "Ctrl+X").
+                Muted tone + larger left margin so it's clearly
+                secondary information and the eye lands on the
+                action label first.
+              -->
+              <TextBlock Grid.Column="1"
+                         Text="{TemplateBinding InputGestureText}"
+                         Foreground="{DynamicResource OnSurfaceMutedBrush}"
+                         Margin="32,0,0,0"
+                         VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+
+          <ControlTemplate.Triggers>
+            <!--
+              IsHighlighted is the "keyboard or mouse focus on this
+              row" flag — the canonical way to paint a hover state
+              on a MenuItem.  Hover background mirrors the
+              SidebarTabButton's resting → hover transition so the
+              app's interactive language stays consistent.
+            -->
+            <Trigger Property="IsHighlighted" Value="True">
+              <Setter TargetName="Root" Property="Background" Value="{DynamicResource SurfaceLayer3Brush}" />
+            </Trigger>
+
+            <!--
+              Disabled state — applies to e.g. "Paste" when the
+              clipboard is empty.  Both the header text AND the
+              shortcut should fade together so the row reads as
+              one unified disabled affordance.
+            -->
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDisabledBrush}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>
