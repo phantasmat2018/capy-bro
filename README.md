@@ -209,10 +209,10 @@ CapyBro по-замовчуванню збирає ZERO телеметрії —
 
 | Що | Де | Чому саме там |
 |---|---|---|
-| API ключ | **Windows Credential Manager** (`CapyBro/OpenRouter`) | Шифрується DPAPI за поточним користувачем. Інші користувачі / інші машини не прочитають. |
-| Конфіг | `~/.ai_text_improver_v2_config.json` | Plaintext JSON. Містить промти, хоткеї, налаштування — без API ключа. |
+| API ключ | **Windows Credential Manager** (`CapyBroV2`) | Шифрується DPAPI за поточним користувачем. Інші користувачі / інші машини не прочитають. |
+| Конфіг | `~/.ai_text_improver_v2_config.json` | Plaintext JSON. Містить промти, хоткеї, налаштування і (після активації Pro) ліцензійний токен — але не API ключ. |
 | Історія | `~/.ai_text_improver_v2_history.json` | Plaintext JSON. Можна вимкнути в налаштуваннях; тоді файл взагалі не пишеться. |
-| Логи | `~/.ai_text_improver_v2.log` | Diagnostic info, БЕЗ вмісту запитів і відповідей. Перезаписується щодня. |
+| Логи | `~/.ai_text_improver_v2*.log` | Diagnostic info, БЕЗ вмісту запитів і відповідей. Новий файл щодня. |
 
 ### Privacy redaction (експериментально)
 
@@ -259,14 +259,14 @@ CapyBro по-замовчуванню збирає ZERO телеметрії —
 ### Settings вікно не відкривається
 
 - Іконка у треї повинна бути жива (не Windows-сіра). Якщо сіра — додаток впав. Перезапустіть з Start menu.
-- Лог: `%USERPROFILE%\.ai_text_improver_v2.log` — там буде stack trace.
+- Лог: `%USERPROFILE%\.ai_text_improver_v2*.log` — там буде stack trace.
 
 ### Як скинути все до дефолтних значень
 
 Закрийте додаток через tray → Quit. Видаліть три файли:
 - `~/.ai_text_improver_v2_config.json`
 - `~/.ai_text_improver_v2_history.json`
-- API ключ через Credential Manager → Windows Credentials → знайти `CapyBro/OpenRouter` → Remove
+- API ключ через Credential Manager → Windows Credentials → знайти `CapyBroV2` → Remove
 
 При наступному запуску знову з'явиться onboarding-візард.
 
