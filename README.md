@@ -8,7 +8,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4?style=flat-square)](#-установка-для-користувачів)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://learn.microsoft.com/en-us/dotnet/)
 [![Version](https://img.shields.io/badge/version-2.0.0-success?style=flat-square)](#-стан-проєкту)
-[![Tests](https://img.shields.io/badge/tests-596%20passing-brightgreen?style=flat-square)](#quality-gate)
+[![Tests](https://img.shields.io/badge/tests-600%2B%20passing-brightgreen?style=flat-square)](#quality-gate)
 [![Built with](https://img.shields.io/badge/built%20with-Claude%20Code-cc785c?style=flat-square)](https://docs.claude.com/en/docs/claude-code/overview)
 
 [capybro.app](https://capybro.app) · [Скачати](https://github.com/phantasmat2018/capy-bro/releases) · [Швидкий старт](#-установка-для-користувачів) · [FAQ](#-faq--troubleshooting)
@@ -23,9 +23,9 @@
 
 Виділили текст у Word, Chrome, VS Code, Slack, Notepad — будь-де → натиснули глобальний хоткей (`Ctrl+Shift+E` за замовчуванням) → AI переписав за вашим промтом → новий текст уже стоїть на місці виділеного. Ніяких вкладок браузера, copy-paste у ChatGPT і назад, ніяких ручних промптів щоразу.
 
-Працює офлайн-як-можливо: один HTTPS-запит до [OpenRouter](https://openrouter.ai) (десятки моделей через єдиний акаунт — GPT-4o, Claude, Gemini, Llama, etc), решта — локально. Native .NET 8 / WPF, без браузера, без Electron. Сидить у системному треї і прокидається тільки на ваш хоткей. Розповсюджується як один self-contained `.exe` інсталятор (~71 MB).
+Працює офлайн-як-можливо: один HTTPS-запит до [OpenRouter](https://openrouter.ai) (десятки моделей через єдиний акаунт — GPT-4o, Claude, Gemini, Llama, etc), решта — локально. Native .NET 8 / WPF, без браузера, без Electron. Сидить у системному треї і прокидається тільки на ваш хоткей. Розповсюджується як один self-contained `.exe` інсталятор (~49 MB).
 
-**Free та Pro.** Цей репозиторій — безкоштовне відкрите ядро CapyBro під ліцензією MIT; усе описане в цьому README доступне безкоштовно. Окремо існує **CapyBro Pro** — преміум-набори промптів, експорт історії, хоткей перемикання моделей і статистика використання; одноразова покупка $19 (без підписки) на [capybro.app](https://capybro.app).
+**Free та Pro.** Цей репозиторій — безкоштовне відкрите ядро CapyBro під ліцензією MIT; усе описане в цьому README доступне безкоштовно. Окремо існує **CapyBro Pro** — бекап налаштувань, преміум-набори промптів, експорт історії, хоткей перемикання моделей і статистика використання; одноразова покупка $19 (без підписки) на [capybro.app](https://capybro.app).
 
 > **Чому "CapyBro"?** Капібара — найхалявніша і найдружніша тварина. Вона нікуди не поспішає, всім допомагає, і ладнає з усіма. Утиліта, яка тихо сидить поруч і робить нудну роботу замість вас — саме той вайб.
 
@@ -78,7 +78,7 @@
 
 ### 🔌 Провайдер LLM — на ваш вибір
 
-CapyBro v2.0 (config schema v15) підтримує два бекенди — переключаються однією галочкою у Налаштуваннях → Провайдер:
+CapyBro v2.0 (config schema v20) підтримує два бекенди — переключаються однією галочкою у Налаштуваннях → Провайдер:
 
 - **OpenRouter (хмара, за замовчуванням)** — швидко, широкий вибір моделей (GPT-4o, Claude, Gemini, Llama тощо), pay-as-you-go. Потрібен API-ключ з [openrouter.ai/keys](https://openrouter.ai/keys).
 - **Ollama (локально)** — для тих, хто **категорично не хоче відправляти текст у хмару**. Запустіть [ollama](https://ollama.com), завантажте будь-яку модель (`ollama pull gemma3`), натисніть «Оновити моделі» — і весь pipeline працює офлайн. Ніяких ключів, ніякого білінгу, нічого не виходить за межі вашого комп'ютера. Стандартна адреса — `http://localhost:11434`, але ви можете перенаправити CapyBro на віддалений Ollama-сервер у вашій LAN.
@@ -119,7 +119,7 @@ CapyBro v2.0 (config schema v15) підтримує два бекенди — п
 - **Pixel-smooth scroll** у ModelsDialog / PromptPickerWindow / HistoryTab — без типового Win-stutter на колесі миші.
 - **Стійкість до конфліктів буфера обміну**: якщо інший додаток (clipboard manager, RDP-канал, антивірус) тримає Win32-clipboard зайнятим, CapyBro перевідбирає його через async retry-цикл — UI не зависає на спроби, продовжує реагувати на кліки та анімації.
 - **Автозапуск з Windows**: чекбокс у Налаштуваннях додає Run-key з прапором `--silent` щоб запуск не відкривав вікно.
-- **Onboarding-візард** при першому запуску — 3 кроки (мова, API-ключ, хоткей).
+- **Onboarding-візард** при першому запуску — 4 кроки (Welcome / API-ключ / хоткеї / Done).
 
 ### 🧪 Експериментальні функції
 
@@ -152,7 +152,7 @@ CapyBro v2.0 (config schema v15) підтримує два бекенди — п
 
 ### Скачати
 
-Скачайте останній реліз з [GitHub Releases](https://github.com/phantasmat2018/capy-bro/releases) — файл `CapyBro-Setup-2.0.0.exe` (~71 MB).
+Скачайте останній реліз з [GitHub Releases](https://github.com/phantasmat2018/capy-bro/releases) — файл `CapyBro-Setup-2.0.0.exe` (~49 MB).
 
 Або зайдіть на [capybro.app](https://capybro.app) — там завжди свіже посилання.
 
@@ -181,7 +181,7 @@ Tray-іконка → Settings → вкладка Промти. Створіть
 
 ## ⚙ Налаштування
 
-Файл: `%USERPROFILE%\.ai_text_improver_v2_config.json` (schema v14)
+Файл: `%USERPROFILE%\.ai_text_improver_v2_config.json` (schema v20)
 
 Більшість опцій редагуються через UI (Налаштування → Загальне). Розширені налаштування:
 
@@ -272,7 +272,7 @@ CapyBro по-замовчуванню збирає ZERO телеметрії —
 
 ### Працює на Windows 10?
 
-Так, мінімальна вимога — Windows 10 1809 (для WinUI 3 / DPI awareness). Більшість фіч прозоро деградують на старіших білдах (Mica → solid background).
+Так, мінімальна вимога — Windows 10 1809 (для WPF / DPI awareness). Більшість фіч прозоро деградують на старіших білдах (Mica → solid background).
 
 ### Працює на macOS / Linux?
 
@@ -290,14 +290,11 @@ cd capy-bro
 # Запустити з-під dotnet (Debug)
 dotnet run --project src/CapyBro
 
-# Тести (596 регресійних на момент написання)
+# Тести (понад 600 регресійних на момент написання)
 dotnet test
 
-# Self-contained збірка single-file для релізу
-dotnet publish src/CapyBro -c Release -r win-x64 --self-contained `
-  -p:PublishSingleFile=true -p:PublishReadyToRun=true `
-  -p:IncludeNativeLibrariesForSelfExtract=true `
-  -o publish/win-x64
+# Self-contained збірка (папка) для релізу
+dotnet publish src/CapyBro -c Release -r win-x64 --self-contained -p:PublishReadyToRun=true -o publish/win-x64
 
 # NSIS installer (потрібен makensis у PATH або у `Program Files (x86)\NSIS\Bin\`)
 & "C:\Program Files (x86)\NSIS\Bin\makensis.exe" installer\installer.nsi
@@ -315,7 +312,7 @@ pwsh installer/sign-installer.ps1
 ```powershell
 dotnet format --verify-no-changes   # стиль коду
 dotnet build -warnaserror           # 0 warnings (TreatWarningsAsErrors=true)
-dotnet test                         # 596/596 regression tests
+dotnet test                         # 600+ regression tests
 ```
 
 Усі троє мають бути зеленими — non-negotiable.
@@ -341,7 +338,7 @@ dotnet test                         # 596/596 regression tests
 | API | **OpenRouter** (HTTPS, SSE для streaming) | Доступ до десятків AI моделей через один акаунт. |
 | Single-instance | Named `Mutex` + `EventWaitHandle` | Другий запуск активує перший замість дублювання. |
 | Credential store | **Windows Credential Manager** | API ключ ніколи не зберігається у JSON. |
-| Configuration | JSON у `~/.ai_text_improver_v2_config.json`, schema v14 | Atomic save через tmp+File.Replace, версійований schema. |
+| Configuration | JSON у `~/.ai_text_improver_v2_config.json`, schema v20 | Atomic save через tmp+File.Replace, версійований schema. |
 | Diff render | **DiffPlex** | Side-by-side порівняння оригіналу + результату у Diff preview modal. |
 | Іконки | **Lucide** (ISC) | 24×24 stroke-based pictograms; вшиті у `Themes/Icons.xaml`. |
 | Installer | **NSIS 3.10** | Per-user install (no admin), MUI2 wizard. |
@@ -352,7 +349,7 @@ dotnet test                         # 596/596 regression tests
 capy-bro/
 ├── src/CapyBro/                # WPF додаток
 │   ├── App.xaml(.cs)           # entry point, DI host, error handlers, OnStartup/OnExit
-│   ├── Models/                 # AppConfig (schema v14), HistoryEntry, Prompt, Language, …
+│   ├── Models/                 # AppConfig (schema v20), HistoryEntry, Prompt, Language, …
 │   ├── Services/               # ConfigStore, HotkeyManager, OpenRouterClient,
 │   │                           #   TextProcessor, HistoryStore, AutostartService,
 │   │                           #   Translator, ToastPresenter, PrivacyRedactor, …
@@ -365,11 +362,11 @@ capy-bro/
 │   ├── Platform/               # SingleInstance + Win32 P/Invoke (RegisterHotKey,
 │   │                           #   SetForegroundWindow, GetForegroundWindow, SendInput)
 │   └── Services/Migration/     # Legacy v1 → v2 config migration
-├── tests/CapyBro.Tests/        # xUnit, 596 регресій
+├── tests/CapyBro.Tests/        # xUnit, понад 600 регресій
 ├── installer/
 │   ├── installer.nsi           # NSIS-script
 │   └── sign-installer.ps1      # Опціональний Authenticode signing wrapper
-├── publish/win-x64/            # output: CapyBro.exe (~78 MB) — gitignored
+├── publish/win-x64/            # self-contained build output (folder) — gitignored
 ├── assets/                     # logo.ico, logo.png
 ├── scripts/                    # release.ps1, png-to-ico.ps1, etc.
 └── README.md                   # цей файл
@@ -379,8 +376,8 @@ capy-bro/
 
 ## 📊 Стан проєкту
 
-- **Версія**: 2.0.0 (config schema v14)
-- **Test suite**: 596 регресійних тестів (всі зелені, окрім known flake `ConcurrentSaveAndLoad_NoTornReadsOrErrorsAsync` що іноді тимчасово блокується testhost-ом з попереднього прогону)
+- **Версія**: 2.0.0 (config schema v20)
+- **Test suite**: понад 600 регресійних тестів (всі зелені, окрім known flake `ConcurrentSaveAndLoad_NoTornReadsOrErrorsAsync` що іноді тимчасово блокується testhost-ом з попереднього прогону)
 - **QA-audit campaign**: закрита — всі Critical / High / Medium / Low findings оброблено (див. `.claude/test-audit/findings/PROGRESS.md` локально для деталей; директорія `.claude/` gitignored).
 - **Polish iterations**: PromptPickerWindow повністю переписаний (foreground-window poller для cross-process dismiss, fix "first ↓ doesn't move selection", focus-keeper після chrome-кліків, multi-key handlers, ItemTemplate з ellipsis). Уніфіковано context menu по всіх input-полях. Прибрано layout-shift при focus у input-полях. WindowCaption кнопки (Min/Max/Close) тепер skip Tab navigation.
 - **Post-campaign hardening passes (2026-05-12)**:
