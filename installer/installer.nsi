@@ -84,6 +84,16 @@ VIAddVersionKey "CompanyName" "CapyBro"
 Section "Application (required)" SecApp
     SectionIn RO
 
+    ; CapyBro is a tray app and may already be running (incl. via
+    ; autostart) when this installer runs as an in-place upgrade. A live
+    ; process locks its own CapyBro.exe and every loaded runtime DLL, so
+    ; the File copy below would fail to overwrite them. Force-close it
+    ; first — nsExec::Exec runs taskkill hidden; harmless no-op when the
+    ; app is not running.
+    nsExec::Exec 'taskkill /F /IM CapyBro.exe'
+    Pop $0
+    Sleep 1500
+
     SetOutPath "$INSTDIR"
 
     ; Upgrade-cleanup: a pre-rename install left an CapyBro.exe
@@ -96,7 +106,7 @@ Section "Application (required)" SecApp
     ; the file is absent.
     Delete "$INSTDIR\CapyBro.exe"
 
-    File "..\publish\win-x64\CapyBro.exe"
+    File /r "..\publish\win-x64\*"
     File "..\assets\logo.ico"
 
     ; Start Menu shortcut — explicit IconLocation pointing at logo.ico
@@ -176,6 +186,16 @@ LangString DESC_SecAutostart ${LANG_ENGLISH} "Launch CapyBro automatically on Wi
 ; ---------- Uninstall ----------
 
 Section "Uninstall"
+    ; CapyBro is a tray app and is very likely running (autostart) at
+    ; uninstall time. A live process locks its own CapyBro.exe plus every
+    ; runtime DLL it has loaded — without this kill, the RMDir /r below
+    ; can only remove the unlocked files and leaves a half-emptied install
+    ; directory behind. Force-close it first; nsExec::Exec runs hidden.
+    ; Harmless no-op when the app is not running.
+    nsExec::Exec 'taskkill /F /IM CapyBro.exe'
+    Pop $0
+    Sleep 1500
+
     Delete "$INSTDIR\CapyBro.exe"
     ; Defensive — pre-rename installs put the binary under the old name.
     ; If the user installed pre-rebrand AND ran the uninstaller built

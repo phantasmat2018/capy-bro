@@ -32,6 +32,15 @@
     <Company>CapyBro</Company>
     <Copyright>(c) 2025</Copyright>
     <ApplicationIcon>..\..\assets\logo.ico</ApplicationIcon>
+    <!--
+      Ship only the neutral (English) framework resources.  Without this,
+      a self-contained publish drags in ~13 per-culture satellite-assembly
+      folders (it/ fr/ pl/ ru/ …) of localized .NET / WPF *framework*
+      messages — ~15 MB of baggage CapyBro never surfaces.  Its own UI
+      strings live in Services/Translator.cs (UA / RU / EN), not in
+      satellite assemblies, so this has zero effect on the app's UI.
+    -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1574;CS1734</NoWarn>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
@@ -40,21 +49,34 @@
   </PropertyGroup>
 
   <!--
-    Publish profile: produce a single self-contained .exe so the installer
-    (installer/installer.nsi) only has to ship one file. Without these the
-    publish output is a folder of ~200 DLLs and the installer's
-    `File "CapyBro.exe"` line copies an exe that fails to start
-    because none of its dependencies are present.
-    EnableCompressionInSingleFile + IncludeNativeLibrariesForSelfExtract
-    keep the bundle ~70 MB (vs ~200 MB uncompressed) while still embedding
-    the WPF native components.
+    Publish profile: self-contained FOLDER build (not single-file).
+    installer/installer.nsi bundles the whole publish/win-x64 folder
+    via `File /r`, so every runtime DLL ships next to CapyBro.exe.
+
+    Why a folder and NOT a single .exe: a compressed single-file bundle
+    must be decompressed into memory on every launch, and self-extracting
+    native libraries unpack to %TEMP% on first run — both add visible
+    cold-start latency for a tray app the user clicks often. A plain
+    folder is memory-mapped by the OS directly: zero unpack, fastest
+    start. The NSIS installer still LZMA-compresses everything for the
+    download, so the only trade-off is a larger on-disk install dir.
+
+    PublishReadyToRun pre-compiles IL to native images to cut JIT at
+    startup. Trimming is deliberately NOT enabled — WPF is not trim-safe.
   -->
   <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
-    <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!--
+      Keep the shipped folder lean: no XML doc file and no .pdb in the
+      publish output (neither is touched at runtime). Regular dev builds
+      still emit a portable .pdb via Directory.Build.props, so local
+      debugging is unaffected — only `dotnet publish` output is trimmed.
+      Trade-off: crash-log stack traces lose line numbers.
+    -->
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
