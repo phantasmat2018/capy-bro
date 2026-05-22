@@ -1,4 +1,4 @@
-; CapyBro — NSIS installer (renamed from "AI Text Improver"; see rebrand commit history)
+; CapyBro — NSIS installer
 ; Per-user install (no admin), MUI2 wizard, optional desktop shortcut + autostart.
 ; Build: makensis installer\installer.nsi (run from repo root)
 ;

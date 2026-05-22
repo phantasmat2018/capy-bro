@@ -1,9 +1,7 @@
-# AI Text Improver — screenshot gallery
+# CapyBro — screenshot gallery
 
-This directory holds the visual reference for `project_design_guide.md`
-§15.3 (Phase E task 19). Captures are taken **manually** by a human
-after the Phase E task 18 smoke checklist passes — automated visual
-regression is tracked separately as a Phase E follow-up (§15.1).
+Reference screenshots of the app's windows, for documentation and the
+website. Captures are taken manually after a smoke-test pass.
 
 ## What to capture
 
@@ -34,7 +32,6 @@ regression is tracked separately as a Phase E follow-up (§15.1).
 
 ## Updating
 
-When a Phase D-or-later change visibly alters one of the windows, re-
-capture the affected images in the same session as the code change
-and amend the commit. The `project_design_guide.md` §0 status
-markers should already reflect that the visual is current.
+When a change visibly alters one of the windows, re-capture the
+affected images in the same session as the code change and amend the
+commit.

@@ -462,8 +462,8 @@ public partial class App : Application
             // Brand decision: always start in English on a fresh install.
             // Pre-rebrand we ran DetectLocale() here so a Ukrainian /
             // Russian Windows would auto-pick its own UI language; that
-            // worked when "AI Text Improver" was a UA-team-internal
-            // product, but the rebranded "CapyBro" ships with English
+            // made sense back when the app was a UA-team-internal tool,
+            // but CapyBro ships with English
             // as the canonical default.  AppConfig.Default.Language is
             // Language.English, so we just save defaults verbatim.  Users
             // explicitly opt into UA / RU via the onboarding wizard's

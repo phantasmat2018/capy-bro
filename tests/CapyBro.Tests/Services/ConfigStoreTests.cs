@@ -658,8 +658,8 @@ public class ConfigStoreTests
     [InlineData("ru", Language.Russian)]
     [InlineData("English", Language.English)]
     [InlineData("en", Language.English)]
-    // Unknown / null values fall back to English post-rebrand (was
-    // Ukrainian when the product was branded "AI Text Improver").
+    // Unknown / null values fall back to English post-rebrand
+    // (was Ukrainian before the rebrand).
     [InlineData("klingon", Language.English)]
     [InlineData(null, Language.English)]
     public async Task LoadAsync_LegacyLanguage_MapsCorrectlyAsync(string? value, Language expected)

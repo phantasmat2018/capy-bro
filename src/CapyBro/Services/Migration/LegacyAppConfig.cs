@@ -118,8 +118,7 @@ internal sealed record LegacyAppConfig
         "english" or "en" or "eng" => AppLanguage.English,
         // Unknown / null values fall back to English — the rebranded
         // product's canonical default.  Pre-rebrand this was Ukrainian
-        // (the team's working locale during initial development of
-        // "AI Text Improver").
+        // (the team's working locale during initial development).
         _ => AppLanguage.English,
     };
 }
