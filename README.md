@@ -213,6 +213,7 @@ CapyBro по-замовчуванню збирає ZERO телеметрії —
 | Конфіг | `~/.ai_text_improver_v2_config.json` | Plaintext JSON. Містить промти, хоткеї, налаштування і (після активації Pro) ліцензійний токен — але не API ключ. |
 | Історія | `~/.ai_text_improver_v2_history.json` | Plaintext JSON. Можна вимкнути в налаштуваннях; тоді файл взагалі не пишеться. |
 | Логи | `~/.ai_text_improver_v2*.log` | Diagnostic info, БЕЗ вмісту запитів і відповідей. Новий файл щодня. |
+| Статистика | `~/.ai_text_improver_v2_stats.json` | Plaintext JSON. Статистика використання Pro (запуски, моделі, витрати). Створюється лише після активації Pro. |
 
 ### Privacy redaction (експериментально)
 
