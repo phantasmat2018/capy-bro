@@ -48,7 +48,6 @@
 - [📚 Корисні посилання](#-корисні-посилання)
 - [🙏 Подяки](#-подяки)
 - [📜 Ліцензія](#-ліцензія)
-- [📝 Історія бренду](#-історія-бренду)
 
 ---
 
@@ -390,7 +389,7 @@ capy-bro/
   - **ModelsDialog UX**: виправлено stale "no matches" статус коли користувач змінює фільтр з no-match → match.
   - **Sentinel dedupe across locale switches** у per-prompt model picker: при перемиканні мови UI попередня локалізація "Default model" sentinel більше не залишається у ComboBox як дублікат поряд з новою.
   - **Pixel-smooth scroll** на ModelsDialog / PromptPickerWindow / HistoryTab ListBox-ах: `ScrollViewer.CanContentScroll="False"` замінює item-based scroll.
-  - **Full brand rename** (`AITextImprover` / `capy-bro` / `Capy Bro` → єдиний `CapyBro`). Див. [Історія бренду](#-історія-бренду).
+  - **Full brand rename** (`AITextImprover` / `capy-bro` / `Capy Bro` → єдиний `CapyBro`).
   - **Homepage integration** — домен `https://capybro.app` (зареєстрований 2026-05-12) тепер вшито у п'ять точок взаємодії з користувачем, single C# source of truth у `Services/AppInfo.Homepage` (typed `Uri`) + `HomepageDisplay` (host-only label `"capybro.app"`):
     - **Settings sidebar footer** — single-line `v2.0.0 · capybro.app` рядок під тонким `BorderSubtleBrush` separator-ом. Обидва сегменти у `OnSurfaceMutedBrush` за замовчуванням; hover на лінк lifts у `BrandPrimaryBrush`, БЕЗ underline (3 iteration cycles before landing: muted bare text → globe icon + full-URL + underline → final single-line mid-dot strip).
     - **Onboarding wizard footer** — клікабельне `capybro.app` у центральній колонці bottom-border'а, рендериться один раз і присутнє на всіх 4 кроках візарда (Welcome / API key / Hotkeys / Done) без per-step duplication. Той самий quiet-by-default + hover-color-shift idiom.
@@ -478,34 +477,6 @@ capy-bro/
 Код у цьому репозиторії — під ліцензією **MIT** (див. файл [`LICENSE`](LICENSE)): вільне використання, зміна та поширення, зокрема комерційне.
 
 Назва й логотип «CapyBro», а також функції версії Pro — не входять у MIT-ліцензію.
-
----
-
-## 📝 Історія бренду
-
-> _Цей розділ потрібен для тих, хто оновлюється з версій до 2026-05-12 — щоб не дивуватись чому install-dir / config-файли все ще "AITextImprover"._
-
-З 2026-05-12 виконано повне об'єднання бренду. Раніше у коді існували три форми (`AITextImprover` — legacy namespace, `capy-bro` — hyphenated binary filename, `Capy Bro` — spaced UI brand), які тепер усі колапсовано на єдиний PascalCase ідентифікатор **`CapyBro`**:
-
-| Що | До 2026-05-12 | Після |
-|---|---|---|
-| Виконуваний файл | `AITextImprover.exe` / `capy-bro.exe` | `CapyBro.exe` |
-| Інсталятор | `CapyBro-Setup.exe` (різні форми) | `CapyBro-Setup-2.0.0.exe` |
-| Namespace | `AITextImprover.*` | `CapyBro.*` |
-| Install-dir | `%LOCALAPPDATA%\AITextImprover\` | `%LOCALAPPDATA%\CapyBro\` |
-| Registry root | `HKCU\Software\AITextImprover` | `HKCU\Software\CapyBro` |
-| Uninstall key | `…\Uninstall\AITextImprover` | `…\Uninstall\CapyBro` |
-| Mutex | `Local\AITextImproverV2` | `Local\CapyBroV2` |
-| Run-key value | `AITextImproverV2` | `CapyBroV2` |
-| Brand text | `AI Text Improver` / `Capy Bro` | `CapyBro` |
-
-**ІНТЕНЦІЙНО НЕ ЗМІНЕНО** для backward-compat з вже встановленими копіями (snake_case-форма не матчить sed-патерни):
-
-- Конфіг: `~/.ai_text_improver_v2_config.json` (зберігає API key, prompts, hotkeys користувача)
-- Історія: `~/.ai_text_improver_v2_history.json`
-- Log file: `~/.ai_text_improver_v2.log`
-
-Існуючі користувачі зберігають всі промти, ключі та історію після upgrade — без migration step. Installer's uninstall section defensively видаляє ЯК нові ключі (`Software\CapyBro`, Run-key `CapyBroV2`), ТАК І legacy (`Software\AITextImprover`, Run-key `AITextImproverV2`) — wraps clean-up для pre-rename install-ів. `AutostartService.RepairIfStale()` self-heals Run-key path drift на наступному launch.
 
 ---
 
