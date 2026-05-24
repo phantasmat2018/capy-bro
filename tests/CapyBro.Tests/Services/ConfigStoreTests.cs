@@ -49,9 +49,10 @@ public class ConfigStoreTests
     public async Task LoadAsync_OldConfigVersion_MigratesExperimentalDiffPreviewToCurrentDefaultAsync()
     {
         // A v2 config file (pre-experimental-features) has no
-        // experimentalDiffPreview field. WithDefaultsApplied applies the
-        // documented current default (false — experimental features ship
-        // disabled). The migration also bumps the stored schema version.
+        // experimentalDiffPreview field.  v16 migration applies the new
+        // documented default (true — diff-preview is now on for everyone
+        // by default; see the v15 → v16 migration entry in AppConfig.cs).
+        // The migration also bumps the stored schema version.
         using var dir = new TempDirectory();
         var configPath = dir.GetPath("config.json");
         var v2Json = /*lang=json,strict*/ """
@@ -74,8 +75,8 @@ public class ConfigStoreTests
 
         var config = await store.LoadAsync();
 
-        config.ExperimentalDiffPreview.Should().BeFalse(
-            "experimental features ship disabled; upgraders inherit the documented default");
+        config.ExperimentalDiffPreview.Should().BeTrue(
+            "v16 documented default is true — pre-v16 configs migrate forward to the new baseline");
         config.ConfigVersion.Should().Be(
             AppConfig.CurrentConfigVersion,
             "loaded config should be upgraded to the current schema version");

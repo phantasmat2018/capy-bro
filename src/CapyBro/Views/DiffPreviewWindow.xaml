@@ -106,12 +106,34 @@
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <TextBlock Grid.Row="0"
-                 Text="{Binding Source={x:Static services:Translator.Instance}, Path=[diff_preview_subtitle]}"
-                 Style="{DynamicResource TypeBody}"
-                 Foreground="{DynamicResource OnSurfaceMutedBrush}"
-                 Margin="0,0,0,12"
-                 TextWrapping="Wrap" />
+      <!--
+        Top row: subtitle on the left, Edit/Diff view toggle on the right.
+        Toggle is a CheckBox bound to IsEditMode (TwoWay) styled like a
+        compact pill button — keeps the chrome calm.  When checked,
+        right pane swaps from the side-by-side diff rows to a single
+        editable TextBox; back to unchecked recomputes the diff against
+        the edited text via DiffPreviewViewModel.OnIsEditModeChanged.
+      -->
+      <Grid Grid.Row="0" Margin="0,0,0,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Column="0"
+                   Text="{Binding Source={x:Static services:Translator.Instance}, Path=[diff_preview_subtitle]}"
+                   Style="{DynamicResource TypeBody}"
+                   Foreground="{DynamicResource OnSurfaceMutedBrush}"
+                   VerticalAlignment="Center"
+                   TextWrapping="Wrap" />
+
+        <CheckBox Grid.Column="1"
+                  IsChecked="{Binding IsEditMode, Mode=TwoWay}"
+                  Content="{Binding Source={x:Static services:Translator.Instance}, Path=[diff_btn_edit_mode]}"
+                  Style="{StaticResource DefaultCheckBox}"
+                  VerticalAlignment="Center"
+                  Margin="12,0,0,0" />
+      </Grid>
 
       <!--
         Stats chip strip (Phase E #13).  Three Pill-style chips
@@ -217,27 +239,64 @@
           </ScrollViewer>
         </Border>
 
+        <!--
+          Improved pane.  Hosts BOTH the read-only diff scroller AND the
+          edit-mode TextBox in the SAME visual slot; only one is visible
+          at a time, swapped via Visibility bindings driven by IsEditMode.
+          BoolToVisibilityNot inverts so the diff scroller hides when
+          edit mode is on; both share the same Border so the chrome stays
+          consistent across the toggle.
+        -->
         <Border Grid.Column="2"
                 Background="{DynamicResource SurfaceLayer1Brush}"
                 BorderBrush="{DynamicResource BorderSubtleBrush}"
                 BorderThickness="1"
                 CornerRadius="6">
-          <ScrollViewer x:Name="ImprovedScroller"
-                        VerticalScrollBarVisibility="Auto"
-                        HorizontalScrollBarVisibility="Disabled"
-                        ScrollChanged="ImprovedScroller_ScrollChanged">
-            <ItemsControl ItemsSource="{Binding ImprovedLines}"
-                          ItemTemplate="{StaticResource DiffLineTemplate}"
-                          VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling"
-                          ScrollViewer.CanContentScroll="False">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <VirtualizingStackPanel />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-            </ItemsControl>
-          </ScrollViewer>
+          <Grid>
+            <ScrollViewer x:Name="ImprovedScroller"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          ScrollChanged="ImprovedScroller_ScrollChanged"
+                          Visibility="{Binding DiffViewVisibility}">
+              <ItemsControl ItemsSource="{Binding ImprovedLines}"
+                            ItemTemplate="{StaticResource DiffLineTemplate}"
+                            VirtualizingStackPanel.IsVirtualizing="True"
+                            VirtualizingStackPanel.VirtualizationMode="Recycling"
+                            ScrollViewer.CanContentScroll="False">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <!--
+              Edit-mode surface: single multi-line TextBox bound to
+              EditableImproved (TwoWay).  No line-by-line diff coloring
+              here — users editing get a clean writing surface; flipping
+              back to Diff view recomputes the colored side-by-side.
+              AcceptsReturn for newlines, BorderThickness=0 because the
+              outer Border already provides the chrome (avoids double
+              border on focus).  Monospace font matches the diff rows so
+              text widths stay consistent across the toggle.
+            -->
+            <TextBox x:Name="ImprovedEditor"
+                     Text="{Binding EditableImproved, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Visibility="{Binding EditViewVisibility}"
+                     IsVisibleChanged="ImprovedEditor_IsVisibleChanged"
+                     AcceptsReturn="True"
+                     AcceptsTab="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Disabled"
+                     FontFamily="Consolas, Courier New, monospace"
+                     FontSize="13"
+                     Foreground="{DynamicResource OnSurfaceDefaultBrush}"
+                     Background="{DynamicResource SurfaceLayer1Brush}"
+                     BorderThickness="0"
+                     Padding="6,4" />
+          </Grid>
         </Border>
       </Grid>
 

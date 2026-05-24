@@ -19,10 +19,11 @@ public sealed record AppConfig
     //   v12 → v13: DeveloperModeEnabled         (hidden 20-click eye-toggle secret unlocks Beta-features section)
     //   v13 → v14: Timeout semantic change      (`0` now means "no timeout / wait indefinitely" — pre-v14 it was just an invalid value clamped to Default; the bump lets WithDefaultsApplied tell "user explicitly set 0" from "field missing in pre-v14 JSON").
     //   v14 → v15: Provider + OllamaEndpoint + OllamaModel + OllamaModels (Ollama-as-alternative-backend support; existing installs upgrade to Provider=OpenRouter so behaviour is unchanged).
+    //   v15 → v16: ExperimentalDiffPreview default flipped to true; the diff-preview-before-paste feature is now ON for everyone by default so each AI-rewritten paragraph passes a verification step before it touches the user's document.  User-feedback driven: pre-v16 a fresh install never saw the modal unless they hunted through General → Experimental, so 90% of users had no idea the safety net existed.  The mass-migration gate (ConfigVersion < 16) overrides any pre-v16 saved value to true; anyone who deliberately disabled it can re-disable via the (now always-visible) per-prompt checkbox or the master toggle.
     // The migration is still a meaningful no-op even when current default
     // equals default(T) — it bumps the stored ConfigVersion so future
     // schema additions can target users by introduction version.
-    public const int CurrentConfigVersion = 15;
+    public const int CurrentConfigVersion = 16;
 
     public int ConfigVersion { get; init; } = CurrentConfigVersion;
 
@@ -164,11 +165,17 @@ public sealed record AppConfig
     public string UndoHotkey { get; init; } = "Ctrl+Shift+Z";
 
     /// <summary>
-    /// Master flag for the diff-preview experimental feature. When false,
-    /// TextProcessor skips the preview step regardless of any prompt's
-    /// per-prompt <see cref="Prompt.ShowDiffPreview"/> opt-in. Default
-    /// false: experimental features ship disabled so a fresh install
-    /// behaves predictably; users opt in via General → Experimental.
+    /// Master kill-switch for the diff-preview-before-paste feature. When
+    /// false, TextProcessor skips the modal regardless of any prompt's
+    /// per-prompt <see cref="Prompt.ShowDiffPreview"/> opt-in.
+    ///
+    /// v16: default flipped to <c>true</c>.  The feature graduated out of
+    /// "experimental" — every fresh install (and every pre-v16 upgrader,
+    /// see the v15 → v16 migration in <see cref="WithDefaultsApplied"/>)
+    /// now sees the preview by default.  Users who prefer the
+    /// instant-paste flow can disable per-prompt via the editor checkbox
+    /// (now always visible, no longer gated behind Experimental) or flip
+    /// this master switch off in Settings → General.
     /// </summary>
     public bool ExperimentalDiffPreview { get; init; }
 
@@ -327,7 +334,11 @@ public sealed record AppConfig
         Hotkey = "Ctrl+Shift+E",
         MenuHotkey = "Ctrl+Shift+Q",
         UndoHotkey = "Ctrl+Shift+Z",
-        ExperimentalDiffPreview = false,
+        // v16: was false in v15.  Flipped to true so the diff-preview
+        // safety net is on for every fresh install + every upgrader (the
+        // mass migration in WithDefaultsApplied overrides any pre-v16
+        // saved value).  See the v15 → v16 migration entry above.
+        ExperimentalDiffPreview = true,
         ExperimentalStreaming = false,
         ExperimentalPerPromptModel = false,
         ExperimentalCostsAndCredits = false,
@@ -359,7 +370,18 @@ public sealed record AppConfig
         // ExperimentalDiffPreview) would silently flip OFF for upgraders.
         // Restore the documented default whenever the loaded version is
         // older than the field's introduction version.
-        var experimentalDiffPreview = ConfigVersion < 3
+        //
+        // v16: mass-flip ExperimentalDiffPreview to true for everyone on
+        // pre-v16 configs (not just pre-v3 where the field didn't yet
+        // exist).  The feature was effectively invisible to ~90% of
+        // users — those who never thought to enable it under General →
+        // Experimental — even though the per-prompt opt-in existed.
+        // Surfacing it by default is the safer baseline (verify-before-
+        // commit on every AI rewrite); anyone who explicitly turned it
+        // off on v15 gets it re-enabled and can turn it off again via
+        // the (now always-visible) per-prompt checkbox or the master
+        // toggle.  v16+ JSON keeps the user's saved value.
+        var experimentalDiffPreview = ConfigVersion < 16
             ? d.ExperimentalDiffPreview
             : ExperimentalDiffPreview;
 

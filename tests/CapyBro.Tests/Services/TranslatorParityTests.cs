@@ -119,6 +119,8 @@ public partial class TranslatorParityTests
     [InlineData("ollama_switched_to_openrouter")]
     [InlineData("ollama_model_not_pulled")]
     [InlineData("onboarding_apikey_ollama_hint")]
+    // v16 — diff-preview edit-mode toggle (Diff ↔ Edit).
+    [InlineData("diff_btn_edit_mode")]
     public void NewQaCampaignKey_ExistsInAllLocales(string key)
     {
         Translator.Strings[Language.Ukrainian].Should().ContainKey(

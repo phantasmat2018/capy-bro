@@ -254,6 +254,7 @@ public sealed class Translator : ITranslator
             ["diff_btn_accept"] = "Прийняти",
             ["diff_btn_regenerate"] = "Перегенерувати",
             ["diff_btn_reject"] = "Відхилити",
+            ["diff_btn_edit_mode"] = "Редагувати результат",
 
             // Experimental features section (General tab)
             ["experimental_features_section"] = "Додаткові функції",
@@ -507,6 +508,7 @@ public sealed class Translator : ITranslator
             ["diff_btn_accept"] = "Принять",
             ["diff_btn_regenerate"] = "Перегенерировать",
             ["diff_btn_reject"] = "Отклонить",
+            ["diff_btn_edit_mode"] = "Редактировать результат",
 
             ["experimental_features_section"] = "Дополнительные функции",
             ["experimental_diff_preview"] = "Превью различий перед применением",
@@ -747,6 +749,7 @@ public sealed class Translator : ITranslator
             ["diff_btn_accept"] = "Accept",
             ["diff_btn_regenerate"] = "Regenerate",
             ["diff_btn_reject"] = "Reject",
+            ["diff_btn_edit_mode"] = "Edit result",
 
             ["experimental_features_section"] = "Additional features",
             ["experimental_diff_preview"] = "Diff preview before applying",

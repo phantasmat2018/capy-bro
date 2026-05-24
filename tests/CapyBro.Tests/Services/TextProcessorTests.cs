@@ -1353,10 +1353,17 @@ public class TextProcessorTests
     /// Scripts a sequence of <see cref="DiffPreviewResult"/>s for the diff
     /// preview prompts that fire during a single processor run. Defaults to
     /// Accept so tests that don't care about preview don't have to script.
+    ///
+    /// v16: the production interface returns DiffPreviewOutcome so the
+    /// caller can pick up edited text from the Edit-view toggle.  The
+    /// mock echoes <c>improved</c> back as FinalImproved (the "user
+    /// didn't edit" case) by default; tests that want to simulate an
+    /// edit enqueue a custom <see cref="DiffPreviewOutcome"/> via
+    /// <see cref="EnqueueOutcomes"/>.
     /// </summary>
     private sealed class ScriptedDiffPreviewService : IDiffPreviewService
     {
-        private readonly Queue<DiffPreviewResult> _scripted = new();
+        private readonly Queue<DiffPreviewOutcome> _scripted = new();
 
         public List<(string Original, string Improved)> Calls { get; } = [];
 
@@ -1366,15 +1373,38 @@ public class TextProcessorTests
         {
             foreach (var r in results)
             {
-                _scripted.Enqueue(r);
+                // Echo the LLM output back unchanged — represents the
+                // "user didn't enter Edit mode" common case.  Tests that
+                // want to simulate manual edits use EnqueueOutcomes.
+                _scripted.Enqueue(new DiffPreviewOutcome(r, string.Empty));
             }
         }
 
-        public Task<DiffPreviewResult> ShowAsync(string original, string improved, CancellationToken ct = default)
+        public void EnqueueOutcomes(params DiffPreviewOutcome[] outcomes)
+        {
+            foreach (var o in outcomes)
+            {
+                _scripted.Enqueue(o);
+            }
+        }
+
+        public Task<DiffPreviewOutcome> ShowAsync(string original, string improved, CancellationToken ct = default)
         {
             Calls.Add((original, improved));
-            var verdict = _scripted.Count > 0 ? _scripted.Dequeue() : DefaultResult;
-            return Task.FromResult(verdict);
+            if (_scripted.Count > 0)
+            {
+                var scripted = _scripted.Dequeue();
+                // EnqueueResults stores empty FinalImproved as a sentinel
+                // meaning "echo the actual call's improved arg back".
+                // EnqueueOutcomes lets a test override that with explicit
+                // user-edited text.
+                var finalText = string.IsNullOrEmpty(scripted.FinalImproved)
+                    ? improved
+                    : scripted.FinalImproved;
+                return Task.FromResult(new DiffPreviewOutcome(scripted.Verdict, finalText));
+            }
+
+            return Task.FromResult(new DiffPreviewOutcome(DefaultResult, improved));
         }
     }
 

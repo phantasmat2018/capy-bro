@@ -20,10 +20,15 @@ internal sealed record DefaultPromptDefinition
 
     /// <summary>
     /// Whether the corresponding <see cref="Prompt"/> should open the diff
-    /// preview before pasting back. Defaulted at the registry-level for
-    /// "fix errors" since that's where verifying changes is most valuable.
+    /// preview before pasting back.
+    ///
+    /// v16: default flipped to <c>true</c> so every prompt definition
+    /// in <see cref="PromptRegistry"/> gets the verify-before-paste
+    /// safety net unless a slot explicitly opts out.  Pre-v16 only
+    /// "Fix errors" had this turned on; the rest silently bypassed
+    /// the modal — fixed by reversing the default polarity.
     /// </summary>
-    public bool ShowDiffPreview { get; init; }
+    public bool ShowDiffPreview { get; init; } = true;
 
     /// <summary>
     /// Optional per-prompt model override. Built-in defaults leave this

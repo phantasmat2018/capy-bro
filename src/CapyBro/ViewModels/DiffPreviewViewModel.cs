@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 
 using CapyBro.Models;
 
@@ -11,9 +12,16 @@ namespace CapyBro.ViewModels;
 
 /// <summary>
 /// Backs the side-by-side diff preview modal. Computes the line-level diff
-/// once at construction (the user can't edit the texts), exposes two
-/// per-line collections for binding, and stores the user's verdict for the
+/// at construction and on every Edit-mode commit, exposes two per-line
+/// collections for binding, and stores the user's verdict for the
 /// DiffPreviewService to read after ShowDialog returns.
+///
+/// v21: the right (Improved) side is editable.  The user can flip
+/// <see cref="IsEditMode"/> on, edit <see cref="EditableImproved"/> in a
+/// TextBox, and flip back — the diff is recomputed against the edited
+/// text so the side-by-side view stays accurate.  Accept commits the
+/// edited version (not the original LLM output) so the user's manual
+/// fixes ship to the document.
 /// </summary>
 public sealed partial class DiffPreviewViewModel : ObservableObject
 {
@@ -21,61 +29,85 @@ public sealed partial class DiffPreviewViewModel : ObservableObject
     {
         Original = original ?? string.Empty;
         Improved = improved ?? string.Empty;
+        _editableImproved = Improved;
 
-        // SideBySideDiffBuilder pads each side with "Imaginary" lines so
-        // OldLines[i] and NewLines[i] always describe the same visual row.
-        // We render those padding lines as empty placeholders below; without
-        // them, equal-length but content-shifted texts wouldn't align.
-        var diff = SideBySideDiffBuilder.Diff(Original, Improved);
+        OriginalLines = [];
+        ImprovedLines = [];
 
-        // Number rows on each side independently.  An Imaginary row
-        // (padding inserted by the differ to keep the two panes
-        // aligned) gets no line number — the gutter renders empty
-        // for that row, but the row still occupies a layout slot
-        // so the side-by-side correlation is preserved.  Real rows
-        // are numbered 1..N within their own pane.
-        OriginalLines = new ObservableCollection<DiffLineRow>(
-            NumberRows(diff.OldText.Lines));
-        ImprovedLines = new ObservableCollection<DiffLineRow>(
-            NumberRows(diff.NewText.Lines));
-
-        // Stats: count Inserted/Deleted/Modified for the footer
-        // chip strip.  Inserted only exists on the New side,
-        // Deleted only on the Old side, Modified appears in both
-        // (paired) — count once on the New side to avoid doubling.
-        InsertedCount = ImprovedLines.Count(r => r.Kind == DiffLineKind.Inserted);
-        DeletedCount = OriginalLines.Count(r => r.Kind == DiffLineKind.Deleted);
-        ModifiedCount = ImprovedLines.Count(r => r.Kind == DiffLineKind.Modified);
+        RecomputeDiff();
     }
 
+    /// <summary>The user's clipboard text — immutable for the lifetime of
+    /// the modal (no UI to edit the original side).</summary>
     public string Original { get; }
 
-    public string Improved { get; }
+    /// <summary>
+    /// The "improved" text — initially the raw LLM result, becomes
+    /// whatever the user committed via Edit mode after a CommitEditableImproved.
+    /// This is the value DiffPreviewService.ShowOnUiThread hands back to
+    /// TextProcessor for the paste step (via <see cref="FinalImproved"/>).
+    /// </summary>
+    public string Improved { get; private set; }
+
+    /// <summary>
+    /// Authoritative result text the diff-preview service returns to
+    /// TextProcessor on Accept.  After every CommitEditableImproved
+    /// (called explicitly on Accept and on the IsEditMode→false transition)
+    /// this stays in sync with <see cref="Improved"/>; reading it before
+    /// the commit would return the pre-edit value.
+    /// </summary>
+    public string FinalImproved => Improved;
 
     public ObservableCollection<DiffLineRow> OriginalLines { get; }
 
     public ObservableCollection<DiffLineRow> ImprovedLines { get; }
 
-    /// <summary>
-    /// Number of lines that exist only in the improved pane —
-    /// surfaced as the green "+ N" chip in the diff stats footer.
-    /// Computed once at construction; the diff is immutable post-
-    /// construction so a one-shot count is safe.
-    /// </summary>
-    public int InsertedCount { get; }
+    [ObservableProperty]
+    private int _insertedCount;
+
+    [ObservableProperty]
+    private int _deletedCount;
+
+    [ObservableProperty]
+    private int _modifiedCount;
 
     /// <summary>
-    /// Number of lines that exist only in the original pane —
-    /// surfaced as the red "- N" chip.
+    /// View-mode flag: <c>false</c> shows the side-by-side diff (read-only,
+    /// default), <c>true</c> swaps the right pane to an editable TextBox so
+    /// the user can hand-fix the LLM result before accepting.  Toggling
+    /// back to false commits the edits and recomputes the diff via the
+    /// OnIsEditModeChanged partial hook.
     /// </summary>
-    public int DeletedCount { get; }
+    [ObservableProperty]
+    private bool _isEditMode;
 
     /// <summary>
-    /// Number of lines paired as "modified" between the two panes
-    /// (same row index, different content) — surfaced as the
-    /// amber "~ N" chip.
+    /// Visibility of the read-only diff scroller in the right pane.  We
+    /// expose a computed Visibility property (instead of binding through
+    /// a BoolToVisibility converter in XAML) because StaticResource
+    /// converter lookups inside a deeply-nested visual tree have
+    /// occasionally failed to resolve in this window — likely an
+    /// ordering interaction with the merged Application.Resources
+    /// dictionaries.  A direct property binding sidesteps that.
     /// </summary>
-    public int ModifiedCount { get; }
+    public Visibility DiffViewVisibility => IsEditMode ? Visibility.Collapsed : Visibility.Visible;
+
+    /// <summary>
+    /// Visibility of the editable TextBox in the right pane — the
+    /// counterpart to <see cref="DiffViewVisibility"/>.  See the comment
+    /// there for why we avoid the converter route.
+    /// </summary>
+    public Visibility EditViewVisibility => IsEditMode ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>
+    /// The in-edit-mode buffer.  Bound to a TextBox via TwoWay so every
+    /// keystroke updates it; we deliberately do NOT recompute the diff
+    /// per-keystroke (too jarring with line reflow + virtualizing scroll
+    /// jumps).  Recompute fires once when the user flips back to diff
+    /// view, or when OnAccept calls <see cref="CommitEditableImproved"/>.
+    /// </summary>
+    [ObservableProperty]
+    private string _editableImproved;
 
     /// <summary>
     /// User's choice — set by the window code-behind when one of the three
@@ -84,6 +116,91 @@ public sealed partial class DiffPreviewViewModel : ObservableObject
     /// choice we cancel the run rather than silently committing".
     /// </summary>
     public DiffPreviewResult Result { get; set; } = DiffPreviewResult.Reject;
+
+    /// <summary>
+    /// Snapshot the current EditableImproved buffer into <see cref="Improved"/>
+    /// + <see cref="FinalImproved"/> and rebuild the per-row diff
+    /// collections against it.  Called from two places:
+    /// <list type="bullet">
+    /// <item>the OnIsEditModeChanged partial hook when the user flips
+    /// back from Edit view to Diff view (so the freshly-shown diff
+    /// reflects their edits);</item>
+    /// <item>the Accept handler in <see cref="Views.DiffPreviewWindow"/>
+    /// — guarantees Accept always ships the latest edited text, even if
+    /// the user clicked Accept while still in Edit view (didn't toggle
+    /// back to Diff first).</item>
+    /// </list>
+    /// No-op when EditableImproved equals the current Improved so repeated
+    /// commits (e.g. Accept after a back-to-diff toggle) don't churn the
+    /// observable collections needlessly.
+    /// </summary>
+    public void CommitEditableImproved()
+    {
+        if (string.Equals(EditableImproved, Improved, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Improved = EditableImproved ?? string.Empty;
+        RecomputeDiff();
+        OnPropertyChanged(nameof(Improved));
+        OnPropertyChanged(nameof(FinalImproved));
+    }
+
+    partial void OnIsEditModeChanged(bool value)
+    {
+        // Notify the computed visibility properties so the XAML
+        // bindings flip the two panes synchronously with the toggle.
+        OnPropertyChanged(nameof(DiffViewVisibility));
+        OnPropertyChanged(nameof(EditViewVisibility));
+
+        // false = "back to diff view" → commit the buffer so the diff
+        // the user is about to see reflects their edits.
+        // true = "entering edit view" → buffer is already in sync (we
+        // last committed on the previous false→true→false cycle, or
+        // it's still the initial LLM output).
+        if (!value)
+        {
+            CommitEditableImproved();
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds <see cref="OriginalLines"/> + <see cref="ImprovedLines"/>
+    /// + the three stat counts from the current Original + Improved
+    /// pair.  Clears-and-refills in place so the existing collection
+    /// references stay valid for XAML bindings (replacing the reference
+    /// would require INotifyPropertyChanged on the property itself, and
+    /// {Binding OriginalLines} on an ItemsControl doesn't re-subscribe
+    /// to a swapped collection without a property-change notification).
+    /// </summary>
+    private void RecomputeDiff()
+    {
+        // SideBySideDiffBuilder pads each side with "Imaginary" lines so
+        // OldLines[i] and NewLines[i] always describe the same visual row.
+        // We render those padding lines as empty placeholders below; without
+        // them, equal-length but content-shifted texts wouldn't align.
+        var diff = SideBySideDiffBuilder.Diff(Original, Improved);
+
+        var newOriginal = NumberRows(diff.OldText.Lines).ToList();
+        var newImproved = NumberRows(diff.NewText.Lines).ToList();
+
+        OriginalLines.Clear();
+        foreach (var row in newOriginal)
+        {
+            OriginalLines.Add(row);
+        }
+
+        ImprovedLines.Clear();
+        foreach (var row in newImproved)
+        {
+            ImprovedLines.Add(row);
+        }
+
+        InsertedCount = newImproved.Count(r => r.Kind == DiffLineKind.Inserted);
+        DeletedCount = newOriginal.Count(r => r.Kind == DiffLineKind.Deleted);
+        ModifiedCount = newImproved.Count(r => r.Kind == DiffLineKind.Modified);
+    }
 
     /// <summary>
     /// Yields rows in source order, assigning a 1-based line number

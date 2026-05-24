@@ -458,7 +458,11 @@ public sealed partial class PromptsTabViewModel : ObservableObject, IDisposable
             {
                 Text = string.Empty,
                 PreserveLanguage = true,
-                ShowDiffPreview = false,
+                // v16: new custom prompts default to ShowDiffPreview=true
+                // to match the new baseline (every AI rewrite passes a
+                // verification step before paste).  Users wanting straight
+                // paste flip the editor checkbox off.
+                ShowDiffPreview = true,
                 Model = null,
             };
 

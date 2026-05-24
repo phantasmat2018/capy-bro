@@ -1,6 +1,6 @@
 using System.Windows;
 
-using CapyBro.Models;
+using CapyBro.Platform;
 using CapyBro.ViewModels;
 using CapyBro.Views;
 
@@ -8,7 +8,7 @@ namespace CapyBro.Services;
 
 internal sealed class DiffPreviewService : IDiffPreviewService
 {
-    public Task<DiffPreviewResult> ShowAsync(string original, string improved, CancellationToken ct = default)
+    public Task<DiffPreviewOutcome> ShowAsync(string original, string improved, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
 
@@ -22,9 +22,19 @@ internal sealed class DiffPreviewService : IDiffPreviewService
         return dispatcher.InvokeAsync(() => ShowOnUiThread(original, improved, ct)).Task;
     }
 
-    private static DiffPreviewResult ShowOnUiThread(string original, string improved, CancellationToken ct)
+    private static DiffPreviewOutcome ShowOnUiThread(string original, string improved, CancellationToken ct)
     {
         var vm = new DiffPreviewViewModel(original, improved);
+
+        // Capture the user's "target app" foreground window AND the
+        // actual focused-child HWND inside it BEFORE the preview window
+        // steals foreground in its OnSourceInitialized.  The focused-
+        // child distinction is what makes the post-modal Ctrl+V land on
+        // the right edit surface (e.g. Scintilla inside Notepad++) and
+        // not on the inert top-level frame's WindowProc.  Captured here
+        // because by the time OnAccept fires our modal has been
+        // foreground for seconds and the original focus has been lost.
+        var (targetForeground, targetFocusedChild) = ForegroundRestorer.CaptureForegroundFocus();
 
         // Owner selection prefers the active window, but in the common
         // hotkey-from-tray case there is no CapyBro window active
@@ -46,6 +56,8 @@ internal sealed class DiffPreviewService : IDiffPreviewService
         var window = new DiffPreviewWindow(vm)
         {
             Owner = owner,
+            TargetForegroundWindow = targetForeground,
+            TargetForegroundFocusedChild = targetFocusedChild,
 
             // If there's no owner, force the modal to centre on the
             // primary screen instead of (0,0) and request topmost so the
@@ -83,6 +95,13 @@ internal sealed class DiffPreviewService : IDiffPreviewService
         // Regenerate). If the window closed without a button click — e.g.
         // user pressed Esc, clicked X, or some external close — VM.Result
         // remains its default (Reject), which is the conservative outcome.
-        return vm.Result;
+        //
+        // FinalImproved holds the latest committed text — equals the
+        // original improved arg if the user never entered Edit mode, or
+        // the user's edited version if they did.  OnAccept calls
+        // CommitEditableImproved before closing, so this is always fresh
+        // on Accept.  On Reject/Regenerate the caller ignores it, but
+        // we still return the latest snapshot for symmetry.
+        return new DiffPreviewOutcome(vm.Result, vm.FinalImproved);
     }
 }

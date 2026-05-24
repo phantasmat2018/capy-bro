@@ -434,11 +434,19 @@
                       IsChecked="{Binding EditorPreserveLanguage, Mode=TwoWay}"
                       Margin="0,0,0,8" />
 
+            <!--
+              v16: visibility no longer gated behind
+              IsDiffPreviewExperimentEnabled — the per-prompt checkbox is
+              always visible so users can disable preview for individual
+              prompts without first hunting through General → Experimental.
+              The master kill-switch in General still gates the actual
+              modal at runtime; this checkbox is just the per-prompt opt-in
+              that pairs with it.
+            -->
             <CheckBox Grid.Row="6"
                       Style="{StaticResource DefaultCheckBox}"
                       Content="{Binding Source={x:Static services:Translator.Instance}, Path=[show_diff_preview]}"
                       IsChecked="{Binding EditorShowDiffPreview, Mode=TwoWay}"
-                      Visibility="{Binding IsDiffPreviewExperimentEnabled, Converter={StaticResource BoolToVisibility}}"
                       Margin="0,0,0,16" />
               </Grid>
               <!-- /editor fields Grid -->

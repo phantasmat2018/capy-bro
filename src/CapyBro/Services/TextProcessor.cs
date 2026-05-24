@@ -23,6 +23,18 @@ public sealed class TextProcessor
     // text reappeared instantly").
     private static readonly TimeSpan PostPasteSettleDelay = TimeSpan.FromMilliseconds(80);
 
+    // Settle pause AFTER the diff-preview modal closes and BEFORE we
+    // synthesise Ctrl+V.  When the user clicked Accept, DiffPreviewWindow
+    // dropped Topmost, ran ForegroundRestorer's AttachThreadInput trick,
+    // and set DialogResult=true — but the OS-side foreground transition
+    // (window-activate messages, focused-child restoration) doesn't
+    // happen synchronously.  Without this pause the Ctrl+V can race
+    // ahead of the activation and land on a still-deactivating window
+    // (which silently drops the keystroke).  150 ms is empirically
+    // enough for the worst-case native edit control (Notepad++ Scintilla,
+    // VS Code's Electron edit surface) to fully re-accept input.
+    private static readonly TimeSpan PostPreviewSettleDelay = TimeSpan.FromMilliseconds(150);
+
     private readonly IConfigStore _configStore;
     private readonly ICredentialStore _credentials;
     private readonly ILlmProviderFactory _providers;
@@ -364,19 +376,32 @@ public sealed class TextProcessor
             //     Prompts editor (which prompts use the feature)
             // Both must be on for the modal to appear. Either off →
             // straight paste like before.
+            //
+            // v16: outcome carries both the verdict AND the (possibly
+            // user-edited) result text.  When the user toggled Edit
+            // view and tweaked the LLM output, outcome.FinalImproved
+            // holds their edits; we promote it into `result` so the
+            // subsequent paste + history record uses the edited version.
+            var previewWasShown = false;
             if (prompt.ShowDiffPreview && config.ExperimentalDiffPreview)
             {
+                previewWasShown = true;
                 while (true)
                 {
                     RaiseProgressClosed();
-                    var verdict = await _diffPreview.ShowAsync(selectedText, result, ct);
+                    var outcome = await _diffPreview.ShowAsync(selectedText, result, ct);
 
-                    if (verdict == DiffPreviewResult.Accept)
+                    if (outcome.Verdict == DiffPreviewResult.Accept)
                     {
+                        // Pick up any manual edits the user made via the
+                        // Edit-view toggle.  When they didn't touch the
+                        // text, FinalImproved equals the original `result`
+                        // and the assignment is a no-op.
+                        result = outcome.FinalImproved;
                         break;
                     }
 
-                    if (verdict == DiffPreviewResult.Reject)
+                    if (outcome.Verdict == DiffPreviewResult.Reject)
                     {
                         // User cancelled — restore the original clipboard,
                         // skip paste, skip history, skip Completed event.
@@ -407,6 +432,20 @@ public sealed class TextProcessor
                         ct);
                     result = _redactor.Restore(result, redacted.Mapping);
                 }
+            }
+
+            // When preview ran, give the OS a moment to fully process the
+            // foreground transition we kicked off in
+            // DiffPreviewWindow.OnAccept (Topmost=false + ForegroundRestorer
+            // sandwich + DialogResult=true).  Without this, the Ctrl+V
+            // SendInput below can race ahead of the activation and land on
+            // a still-deactivating window — apps like Notepad++ silently
+            // drop the keystroke in that window, manifesting as "I clicked
+            // Accept but nothing pasted".  No delay on the non-preview
+            // path (the original foreground was never lost).
+            if (previewWasShown)
+            {
+                await Task.Delay(PostPreviewSettleDelay, ct);
             }
 
             await _clipboard.SetTextAsync(result, ct);
