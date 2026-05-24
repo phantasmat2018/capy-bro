@@ -60,12 +60,38 @@
          while the list+editor grid fills the remaining height. -->
     <Border Grid.Row="1" Style="{StaticResource SectionCard}">
       <DockPanel LastChildFill="True">
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
-          <Border Style="{StaticResource SectionAccentStrip}" />
-          <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[prompts_section]}"
-                     Style="{DynamicResource TypeH3}"
-                     VerticalAlignment="Center" />
-        </StackPanel>
+        <!-- Heading row: section title on the left, the prompt-packs
+             browser launcher on the right.  The launcher follows the
+             "visible but locked" Pro idiom — the button opens for every
+             user, a brand-outlined "Pro" pill marks the feature for
+             free-tier users, and the install action inside the dialog
+             checks the live license. -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"
+                      Visibility="{Binding ProFeaturesVisible, Converter={StaticResource BoolToVisibility}}">
+            <Border BorderBrush="{DynamicResource BrandPrimaryBrush}"
+                    BorderThickness="1"
+                    CornerRadius="3"
+                    Padding="5,0,5,1"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding IsFreeTier, Converter={StaticResource BoolToVisibility}}">
+              <TextBlock Text="Pro"
+                         FontSize="9"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource BrandPrimaryBrush}" />
+            </Border>
+            <Button Style="{StaticResource ButtonDefault}"
+                    Margin="8,0,0,0"
+                    Content="{Binding Source={x:Static services:Translator.Instance}, Path=[prompt_packs_title]}"
+                    Command="{Binding OpenPromptPacksCommand}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Border Style="{StaticResource SectionAccentStrip}" />
+            <TextBlock Text="{Binding Source={x:Static services:Translator.Instance}, Path=[prompts_section]}"
+                       Style="{DynamicResource TypeH3}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </DockPanel>
 
         <Grid>
           <Grid.ColumnDefinitions>
@@ -435,18 +461,17 @@
                       Margin="0,0,0,8" />
 
             <!--
-              v16: visibility no longer gated behind
-              IsDiffPreviewExperimentEnabled — the per-prompt checkbox is
-              always visible so users can disable preview for individual
-              prompts without first hunting through General → Experimental.
-              The master kill-switch in General still gates the actual
-              modal at runtime; this checkbox is just the per-prompt opt-in
-              that pairs with it.
+              v21.6: visibility gate back — per-prompt checkbox is hidden
+              when the master toggle in General → Additional features is OFF.
+              Без цього юзер бачив per-prompt opt-in який нічого не робив
+              (модалка не з'являлась бо master OFF) — confusing dead control.
+              Master ON → checkbox видно і опт-ін реально працює.
             -->
             <CheckBox Grid.Row="6"
                       Style="{StaticResource DefaultCheckBox}"
                       Content="{Binding Source={x:Static services:Translator.Instance}, Path=[show_diff_preview]}"
                       IsChecked="{Binding EditorShowDiffPreview, Mode=TwoWay}"
+                      Visibility="{Binding IsDiffPreviewExperimentEnabled, Converter={StaticResource BoolToVisibility}}"
                       Margin="0,0,0,16" />
               </Grid>
               <!-- /editor fields Grid -->
