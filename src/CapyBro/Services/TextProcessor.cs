@@ -328,7 +328,7 @@ public sealed class TextProcessor
             // cost suffix; never blocks the actual run.
             var estimatedCost = await EstimateCostAsync(config, apiKey, effectiveModel, redacted.RedactedText, ct);
 
-            RaiseStarted(estimatedCost);
+            RaiseStarted(estimatedCost, effectiveModel);
 
             // v14: `0` is the user's "wait forever" opt-in (documented
             // in the Additional features tooltip and in the AppConfig
@@ -416,7 +416,7 @@ public sealed class TextProcessor
                     // rather than a fresh task with renumbered entities.
                     // Reuse the original cost estimate — same input, same
                     // model, no need to re-fetch pricing.
-                    RaiseStarted(estimatedCost);
+                    RaiseStarted(estimatedCost, effectiveModel);
                     // Reuse the same Timeout.InfiniteTimeSpan sentinel
                     // translation as the initial call above — config.Timeout
                     // == 0 means "wait forever" on regenerate too.
@@ -796,8 +796,8 @@ public sealed class TextProcessor
         }
     }
 
-    private void RaiseStarted(decimal? estimatedCostUsd) =>
-        ProcessingStarted?.Invoke(this, new TextProcessingStartedEventArgs(estimatedCostUsd));
+    private void RaiseStarted(decimal? estimatedCostUsd, string effectiveModel) =>
+        ProcessingStarted?.Invoke(this, new TextProcessingStartedEventArgs(estimatedCostUsd, effectiveModel));
 
     private void RaiseCompleted() => ProcessingCompleted?.Invoke(this, EventArgs.Empty);
 

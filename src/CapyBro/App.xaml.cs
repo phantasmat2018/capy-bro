@@ -723,14 +723,16 @@ public partial class App : Application
                     msg += " " + translator.Format("toast_cost_estimate", FormatUsd(cost));
                 }
 
-                // v15: tag the toast with the active provider when it's
-                // Ollama so the user can confirm at a glance that text
-                // is being routed to the local backend.  OpenRouter
-                // (the default) stays untagged — adding "OpenRouter"
-                // everywhere would be noise for the 99% case.
-                if (generalTabForToast.IsOllamaProvider)
+                // v17 (free-core): model suffix on the toast so the user
+                // can confirm at a glance which model is processing.  Format
+                // is the raw id — OpenRouter slug ("openai/gpt-4o") or
+                // Ollama tag ("gemma3:latest") — which also implicitly
+                // signals the provider, so we drop the older "· Ollama"
+                // tag from v15 (the tag was added then because there was
+                // no other provider signal in the toast).
+                if (!string.IsNullOrWhiteSpace(e.EffectiveModel))
                 {
-                    msg += " · Ollama";
+                    msg += " · " + e.EffectiveModel;
                 }
 
                 notifications.ShowProgress(msg, onCancel: CancelCurrentProcessing);
