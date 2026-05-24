@@ -50,6 +50,14 @@ VIAddVersionKey "CompanyName" "CapyBro"
 !define MUI_ICON "..\assets\logo.ico"
 !define MUI_UNICON "..\assets\logo.ico"
 
+; Branded sidebar bitmap on the Welcome + Finish pages — replaces the
+; default NSIS placeholder (a generic blue computer icon).  MUI2 expects
+; exactly 164x314 px, 24-bit BMP; the asset is downsampled from a 909x1731
+; PNG master via System.Drawing (aspect ratio 0.525 → 0.522, no crop).
+; Same image is used for both installer and uninstaller welcome/finish.
+!define MUI_WELCOMEFINISHPAGE_BITMAP "..\assets\installer-sidebar.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\assets\installer-sidebar.bmp"
+
 !define MUI_FINISHPAGE_RUN "$INSTDIR\CapyBro.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Launch CapyBro"
 !define MUI_FINISHPAGE_RUN_NOTCHECKED
