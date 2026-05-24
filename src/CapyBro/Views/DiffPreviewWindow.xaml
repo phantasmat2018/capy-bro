@@ -44,16 +44,6 @@
     </Style>
 
     <DataTemplate x:Key="DiffLineTemplate" DataType="{x:Type vm:DiffLineRow}">
-      <!--
-        Two-column row: line-number gutter + content.  Gutter is
-        fixed at 36 px so both panes' gutters always align across
-        the side-by-side ScrollViewer pair (a "*"-sized gutter
-        would expand for triple-digit line numbers and create
-        differential widths between the two columns).  The bound
-        kind tint (DiffLineBorder Style) extends across both gutter
-        AND content — the triggers paint the outer Border's
-        Background, which both inner pieces sit on.
-      -->
       <Border Style="{StaticResource DiffLineBorder}">
         <Grid>
           <Grid.ColumnDefinitions>
@@ -61,15 +51,6 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
 
-          <!--
-            Line-number gutter.  TextBlock binds to LineNumber (int?)
-            — WPF renders null as empty string, so Imaginary rows
-            (alignment padding from the differ) show a blank
-            gutter cell while the row still occupies its layout
-            slot.  Right-aligned + monospace so multi-digit numbers
-            stay vertically tidy.  Faint OnSurfaceMuted brush keeps
-            the gutter subordinate to the diff content.
-          -->
           <TextBlock Grid.Column="0"
                      Text="{Binding LineNumber}"
                      Foreground="{DynamicResource OnSurfaceMutedBrush}"
@@ -88,6 +69,33 @@
         </Grid>
       </Border>
     </DataTemplate>
+
+    <!--
+      Pane-header strip used inside both Borders below.  Subtle tint that
+      reads as "this is a header, not content" without taking colour
+      attention away from the diff rows.
+    -->
+    <Style x:Key="PaneHeaderBorder" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource SurfaceLayer2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <!--
+      Pane title (Original / Result) sitting inside each pane header.
+      Smaller + muted vs the section h2 above so the eye reads them as
+      labels, not content headers.
+    -->
+    <Style x:Key="PaneTitle" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="{DynamicResource FontPrimary}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource OnSurfaceMutedBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <!-- Hand-tuned letter-spacing to read as a small-caps-ish label. -->
+      <Setter Property="TextOptions.TextFormattingMode" Value="Ideal" />
+    </Style>
   </Window.Resources>
 
   <DockPanel LastChildFill="True">
@@ -97,24 +105,24 @@
                             ShowMinMax="True"
                             ShowTitle="True" />
 
-    <Grid Margin="20">
+    <Grid Margin="20,16,20,16">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
-        <RowDefinition Height="Auto" />
-        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <!--
-        Top row: subtitle on the left, Edit/Diff view toggle on the right.
-        Toggle is a CheckBox bound to IsEditMode (TwoWay) styled like a
-        compact pill button — keeps the chrome calm.  When checked,
-        right pane swaps from the side-by-side diff rows to a single
-        editable TextBox; back to unchecked recomputes the diff against
-        the edited text via DiffPreviewViewModel.OnIsEditModeChanged.
+        Row 0 — header strip with subtitle on the left and the stats
+        chips on the right.  Stats chips show only the kinds that
+        actually occurred (each one hides when its count is 0), so a
+        pure-translation prompt with only modifications shows just
+        one amber "~N" chip instead of three with two zeros.  When
+        the AI produced an identical result, a single muted "No
+        changes" pill replaces the chips entirely.
       -->
-      <Grid Grid.Row="0" Margin="0,0,0,12">
+      <Grid Grid.Row="0" Margin="0,0,0,14">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
@@ -127,138 +135,101 @@
                    VerticalAlignment="Center"
                    TextWrapping="Wrap" />
 
-        <CheckBox Grid.Column="1"
-                  IsChecked="{Binding IsEditMode, Mode=TwoWay}"
-                  Content="{Binding Source={x:Static services:Translator.Instance}, Path=[diff_btn_edit_mode]}"
-                  Style="{StaticResource DefaultCheckBox}"
-                  VerticalAlignment="Center"
-                  Margin="12,0,0,0" />
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center">
+          <Border Background="{DynamicResource DiffInsertBackgroundBrush}"
+                  CornerRadius="10"
+                  Padding="10,3"
+                  Margin="0,0,6,0"
+                  Visibility="{Binding InsertedChipVisibility}">
+            <TextBlock Foreground="{DynamicResource OnSurfaceDefaultBrush}"
+                       FontFamily="Consolas, Courier New, monospace"
+                       FontSize="12">
+              <Run Text="+ " />
+              <Run Text="{Binding InsertedCount, Mode=OneWay}" />
+            </TextBlock>
+          </Border>
+          <Border Background="{DynamicResource DiffDeleteBackgroundBrush}"
+                  CornerRadius="10"
+                  Padding="10,3"
+                  Margin="0,0,6,0"
+                  Visibility="{Binding DeletedChipVisibility}">
+            <TextBlock Foreground="{DynamicResource OnSurfaceDefaultBrush}"
+                       FontFamily="Consolas, Courier New, monospace"
+                       FontSize="12">
+              <Run Text="− " />
+              <Run Text="{Binding DeletedCount, Mode=OneWay}" />
+            </TextBlock>
+          </Border>
+          <Border Background="{DynamicResource DiffModifiedBackgroundBrush}"
+                  CornerRadius="10"
+                  Padding="10,3"
+                  Visibility="{Binding ModifiedChipVisibility}">
+            <TextBlock Foreground="{DynamicResource OnSurfaceDefaultBrush}"
+                       FontFamily="Consolas, Courier New, monospace"
+                       FontSize="12">
+              <Run Text="~ " />
+              <Run Text="{Binding ModifiedCount, Mode=OneWay}" />
+            </TextBlock>
+          </Border>
+
+          <!--
+            "No changes" pill — muted outline style replaces the
+            three coloured chips when the AI returned identical text.
+            Without it the chip strip went empty and the header
+            looked like the data was still loading.
+          -->
+          <Border BorderBrush="{DynamicResource BorderSubtleBrush}"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="10,3"
+                  Visibility="{Binding IsIdentical}">
+            <TextBlock Foreground="{DynamicResource OnSurfaceMutedBrush}"
+                       Style="{DynamicResource TypeCaption}"
+                       Text="{Binding Source={x:Static services:Translator.Instance}, Path=[diff_no_changes]}" />
+          </Border>
+        </StackPanel>
       </Grid>
 
       <!--
-        Stats chip strip (Phase E #13).  Three Pill-style chips
-        showing inserted / deleted / modified counts at a glance —
-        same visual rhythm as GitHub's PR diff stats.  Each chip is
-        a Border tinted with the matching diff colour at low alpha
-        (DiffInsert/DiffDelete/DiffModifiedBackgroundBrush — same
-        brushes the per-line backgrounds use, so the user immediately
-        associates each chip with its diff colour).
-
-        Padding 8,3 + CornerRadius 10 gives a pill shape; FontSize 12
-        keeps the strip visually subordinate to the column headers
-        below.  + / - / ~ glyphs are conventional diff notation
-        (no localisation needed for the symbols themselves; the
-        numbers are the actionable content).
+        Row 1 — side-by-side panes.  Each pane has its own integrated
+        header (label + content area) so the column titles stay
+        attached to their content even when the user resizes the
+        window.  The right pane's header carries the Edit toggle —
+        contextually placed next to the surface it controls instead
+        of floating in the window chrome.
       -->
-      <StackPanel Grid.Row="1"
-                  Orientation="Horizontal"
-                  Margin="0,0,0,12">
-        <Border Background="{DynamicResource DiffInsertBackgroundBrush}"
-                CornerRadius="10"
-                Padding="10,3"
-                Margin="0,0,8,0">
-          <TextBlock Foreground="{DynamicResource OnSurfaceDefaultBrush}"
-                     FontFamily="Consolas, Courier New, monospace"
-                     FontSize="12">
-            <Run Text="+ " />
-            <Run Text="{Binding InsertedCount, Mode=OneWay}" />
-          </TextBlock>
-        </Border>
-        <Border Background="{DynamicResource DiffDeleteBackgroundBrush}"
-                CornerRadius="10"
-                Padding="10,3"
-                Margin="0,0,8,0">
-          <TextBlock Foreground="{DynamicResource OnSurfaceDefaultBrush}"
-                     FontFamily="Consolas, Courier New, monospace"
-                     FontSize="12">
-            <Run Text="− " />
-            <Run Text="{Binding DeletedCount, Mode=OneWay}" />
-          </TextBlock>
-        </Border>
-        <Border Background="{DynamicResource DiffModifiedBackgroundBrush}"
-                CornerRadius="10"
-                Padding="10,3">
-          <TextBlock Foreground="{DynamicResource OnSurfaceDefaultBrush}"
-                     FontFamily="Consolas, Courier New, monospace"
-                     FontSize="12">
-            <Run Text="~ " />
-            <Run Text="{Binding ModifiedCount, Mode=OneWay}" />
-          </TextBlock>
-        </Border>
-      </StackPanel>
-
-      <!-- Column headers -->
-      <Grid Grid.Row="2" Margin="0,0,0,4">
+      <Grid Grid.Row="1">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="12" />
           <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Column="0"
-                   Text="{Binding Source={x:Static services:Translator.Instance}, Path=[history_label_original]}"
-                   Style="{DynamicResource TypeBodyStrong}" />
-
-        <TextBlock Grid.Column="2"
-                   Text="{Binding Source={x:Static services:Translator.Instance}, Path=[history_label_improved]}"
-                   Style="{DynamicResource TypeBodyStrong}" />
-      </Grid>
-
-      <!-- Side-by-side panes. ItemsControl + ScrollViewer chosen over
-           ListBox because we don't want item selection chrome (focus
-           rectangle, hover/select states) on diff rows — they're read-only
-           data, not interactive selectors. UI virtualization for large
-           texts is enabled via VirtualizingStackPanel below. -->
-      <Grid Grid.Row="3">
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="12" />
-          <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
+        <!-- Original pane (read-only) -->
         <Border Grid.Column="0"
                 Background="{DynamicResource SurfaceLayer1Brush}"
                 BorderBrush="{DynamicResource BorderSubtleBrush}"
                 BorderThickness="1"
                 CornerRadius="6">
-          <ScrollViewer x:Name="OriginalScroller"
-                        VerticalScrollBarVisibility="Auto"
-                        HorizontalScrollBarVisibility="Disabled"
-                        ScrollChanged="OriginalScroller_ScrollChanged">
-            <ItemsControl ItemsSource="{Binding OriginalLines}"
-                          ItemTemplate="{StaticResource DiffLineTemplate}"
-                          VirtualizingStackPanel.IsVirtualizing="True"
-                          VirtualizingStackPanel.VirtualizationMode="Recycling"
-                          ScrollViewer.CanContentScroll="False">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <VirtualizingStackPanel />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-            </ItemsControl>
-          </ScrollViewer>
-        </Border>
-
-        <!--
-          Improved pane.  Hosts BOTH the read-only diff scroller AND the
-          edit-mode TextBox in the SAME visual slot; only one is visible
-          at a time, swapped via Visibility bindings driven by IsEditMode.
-          BoolToVisibilityNot inverts so the diff scroller hides when
-          edit mode is on; both share the same Border so the chrome stays
-          consistent across the toggle.
-        -->
-        <Border Grid.Column="2"
-                Background="{DynamicResource SurfaceLayer1Brush}"
-                BorderBrush="{DynamicResource BorderSubtleBrush}"
-                BorderThickness="1"
-                CornerRadius="6">
           <Grid>
-            <ScrollViewer x:Name="ImprovedScroller"
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Style="{StaticResource PaneHeaderBorder}">
+              <TextBlock Style="{StaticResource PaneTitle}"
+                         Text="{Binding Source={x:Static services:Translator.Instance}, Path=[history_label_original]}" />
+            </Border>
+
+            <ScrollViewer x:Name="OriginalScroller"
+                          Grid.Row="1"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
-                          ScrollChanged="ImprovedScroller_ScrollChanged"
-                          Visibility="{Binding DiffViewVisibility}">
-              <ItemsControl ItemsSource="{Binding ImprovedLines}"
+                          ScrollChanged="OriginalScroller_ScrollChanged">
+              <ItemsControl ItemsSource="{Binding OriginalLines}"
                             ItemTemplate="{StaticResource DiffLineTemplate}"
                             VirtualizingStackPanel.IsVirtualizing="True"
                             VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -270,43 +241,103 @@
                 </ItemsControl.ItemsPanel>
               </ItemsControl>
             </ScrollViewer>
+          </Grid>
+        </Border>
 
-            <!--
-              Edit-mode surface: single multi-line TextBox bound to
-              EditableImproved (TwoWay).  No line-by-line diff coloring
-              here — users editing get a clean writing surface; flipping
-              back to Diff view recomputes the colored side-by-side.
-              AcceptsReturn for newlines, BorderThickness=0 because the
-              outer Border already provides the chrome (avoids double
-              border on focus).  Monospace font matches the diff rows so
-              text widths stay consistent across the toggle.
-            -->
-            <TextBox x:Name="ImprovedEditor"
-                     Text="{Binding EditableImproved, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     Visibility="{Binding EditViewVisibility}"
-                     IsVisibleChanged="ImprovedEditor_IsVisibleChanged"
-                     AcceptsReturn="True"
-                     AcceptsTab="True"
-                     TextWrapping="Wrap"
-                     VerticalScrollBarVisibility="Auto"
-                     HorizontalScrollBarVisibility="Disabled"
-                     FontFamily="Consolas, Courier New, monospace"
-                     FontSize="13"
-                     Foreground="{DynamicResource OnSurfaceDefaultBrush}"
-                     Background="{DynamicResource SurfaceLayer1Brush}"
-                     BorderThickness="0"
-                     Padding="6,4" />
+        <!--
+          Result pane — read-only diff scroller OR editable TextBox in
+          the same visual slot, swapped via Visibility bindings on the
+          IsEditMode VM property.  Edit toggle lives in this pane's
+          header (top-right corner) because that's the surface it
+          controls; placing it in the window chrome made it feel
+          disconnected from the action it triggered.
+        -->
+        <Border Grid.Column="2"
+                Background="{DynamicResource SurfaceLayer1Brush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Style="{StaticResource PaneHeaderBorder}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Style="{StaticResource PaneTitle}"
+                           Text="{Binding Source={x:Static services:Translator.Instance}, Path=[history_label_improved]}" />
+
+                <CheckBox Grid.Column="1"
+                          IsChecked="{Binding IsEditMode, Mode=TwoWay}"
+                          Content="{Binding Source={x:Static services:Translator.Instance}, Path=[diff_btn_edit_mode]}"
+                          Style="{StaticResource DefaultCheckBox}"
+                          VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+
+            <Grid Grid.Row="1">
+              <ScrollViewer x:Name="ImprovedScroller"
+                            VerticalScrollBarVisibility="Auto"
+                            HorizontalScrollBarVisibility="Disabled"
+                            ScrollChanged="ImprovedScroller_ScrollChanged"
+                            Visibility="{Binding DiffViewVisibility}">
+                <ItemsControl ItemsSource="{Binding ImprovedLines}"
+                              ItemTemplate="{StaticResource DiffLineTemplate}"
+                              VirtualizingStackPanel.IsVirtualizing="True"
+                              VirtualizingStackPanel.VirtualizationMode="Recycling"
+                              ScrollViewer.CanContentScroll="False">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                </ItemsControl>
+              </ScrollViewer>
+
+              <TextBox x:Name="ImprovedEditor"
+                       Text="{Binding EditableImproved, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Visibility="{Binding EditViewVisibility}"
+                       IsVisibleChanged="ImprovedEditor_IsVisibleChanged"
+                       AcceptsReturn="True"
+                       AcceptsTab="True"
+                       TextWrapping="Wrap"
+                       VerticalScrollBarVisibility="Auto"
+                       HorizontalScrollBarVisibility="Disabled"
+                       FontFamily="Consolas, Courier New, monospace"
+                       FontSize="13"
+                       Foreground="{DynamicResource OnSurfaceDefaultBrush}"
+                       Background="{DynamicResource SurfaceLayer1Brush}"
+                       BorderThickness="0"
+                       Padding="6,4" />
+            </Grid>
           </Grid>
         </Border>
       </Grid>
 
-      <!-- Action footer: Reject left-most (lowest commitment), Regenerate
-           middle, Accept (Primary, IsDefault) right-most. Matches §7.10
-           dialog idiom — primary CTA on the right. -->
-      <StackPanel Grid.Row="4"
+      <!--
+        Row 2 — hairline divider separating the content from the
+        action footer.  Without it the buttons sat directly under
+        the bordered panes and the whole bottom looked unfinished.
+      -->
+      <Border Grid.Row="2"
+              Height="1"
+              Background="{DynamicResource BorderSubtleBrush}"
+              Margin="0,16,0,0" />
+
+      <!-- Action footer: Reject (lowest commitment), Regenerate, Accept
+           (Primary, IsDefault). Matches §7.10 dialog idiom — primary
+           CTA right-most. -->
+      <StackPanel Grid.Row="3"
                   Orientation="Horizontal"
                   HorizontalAlignment="Right"
-                  Margin="0,16,0,0">
+                  Margin="0,14,0,0">
         <Button x:Name="RejectButton"
                 Style="{StaticResource ButtonDefault}"
                 Content="{Binding Source={x:Static services:Translator.Instance}, Path=[diff_btn_reject]}"

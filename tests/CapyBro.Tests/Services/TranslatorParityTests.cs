@@ -121,6 +121,8 @@ public partial class TranslatorParityTests
     [InlineData("onboarding_apikey_ollama_hint")]
     // v16 — diff-preview edit-mode toggle (Diff ↔ Edit).
     [InlineData("diff_btn_edit_mode")]
+    // v17 — empty-diff "no changes" hint shown when the AI returned identical text.
+    [InlineData("diff_no_changes")]
     public void NewQaCampaignKey_ExistsInAllLocales(string key)
     {
         Translator.Strings[Language.Ukrainian].Should().ContainKey(

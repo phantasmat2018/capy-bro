@@ -60,3 +60,4 @@ Desktop.ini
 secrets.json
 appsettings.*.local.json
 .commit-msg-temp.txt
+.commit-msg-temp.txt

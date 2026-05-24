@@ -250,11 +250,12 @@ public sealed class Translator : ITranslator
 
             // Diff preview window
             ["diff_preview_title"] = "Перевірте зміни",
-            ["diff_preview_subtitle"] = "Перевірте зміни, які зробив AI. Прийняти — вставити результат, Перегенерувати — спробувати ще раз, Відхилити — нічого не міняти.",
+            ["diff_preview_subtitle"] = "Перевірте зміни перед застосуванням.",
             ["diff_btn_accept"] = "Прийняти",
             ["diff_btn_regenerate"] = "Перегенерувати",
             ["diff_btn_reject"] = "Відхилити",
             ["diff_btn_edit_mode"] = "Редагувати результат",
+            ["diff_no_changes"] = "Текст не змінився",
 
             // Experimental features section (General tab)
             ["experimental_features_section"] = "Додаткові функції",
@@ -504,11 +505,12 @@ public sealed class Translator : ITranslator
             ["hotkey_conflict"] = "Комбинация {0} уже используется для другого действия",
 
             ["diff_preview_title"] = "Проверьте изменения",
-            ["diff_preview_subtitle"] = "Проверьте изменения, которые сделал AI. Принять — вставить результат, Перегенерировать — попробовать снова, Отклонить — ничего не менять.",
+            ["diff_preview_subtitle"] = "Проверьте изменения перед применением.",
             ["diff_btn_accept"] = "Принять",
             ["diff_btn_regenerate"] = "Перегенерировать",
             ["diff_btn_reject"] = "Отклонить",
             ["diff_btn_edit_mode"] = "Редактировать результат",
+            ["diff_no_changes"] = "Текст не изменился",
 
             ["experimental_features_section"] = "Дополнительные функции",
             ["experimental_diff_preview"] = "Превью различий перед применением",
@@ -745,11 +747,12 @@ public sealed class Translator : ITranslator
             ["hotkey_conflict"] = "Hotkey {0} is already used for another action",
 
             ["diff_preview_title"] = "Review changes",
-            ["diff_preview_subtitle"] = "Review the AI's changes. Accept to paste, Regenerate to try again, Reject to leave the original untouched.",
+            ["diff_preview_subtitle"] = "Review the changes before applying.",
             ["diff_btn_accept"] = "Accept",
             ["diff_btn_regenerate"] = "Regenerate",
             ["diff_btn_reject"] = "Reject",
             ["diff_btn_edit_mode"] = "Edit result",
+            ["diff_no_changes"] = "No changes",
 
             ["experimental_features_section"] = "Additional features",
             ["experimental_diff_preview"] = "Diff preview before applying",

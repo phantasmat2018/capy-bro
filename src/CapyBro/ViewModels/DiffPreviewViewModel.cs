@@ -63,13 +63,44 @@ public sealed partial class DiffPreviewViewModel : ObservableObject
     public ObservableCollection<DiffLineRow> ImprovedLines { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(InsertedChipVisibility))]
+    [NotifyPropertyChangedFor(nameof(HasAnyChanges))]
+    [NotifyPropertyChangedFor(nameof(IsIdentical))]
     private int _insertedCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeletedChipVisibility))]
+    [NotifyPropertyChangedFor(nameof(HasAnyChanges))]
+    [NotifyPropertyChangedFor(nameof(IsIdentical))]
     private int _deletedCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ModifiedChipVisibility))]
+    [NotifyPropertyChangedFor(nameof(HasAnyChanges))]
+    [NotifyPropertyChangedFor(nameof(IsIdentical))]
     private int _modifiedCount;
+
+    /// <summary>
+    /// Per-chip visibility: hide the chip when its count is zero so the
+    /// stats strip shows only the change kinds that actually occurred.
+    /// "+0 -0 ~0" was visual clutter that drew the eye to nothing — for
+    /// a pure-translation prompt with only modified lines we now show
+    /// just the amber "~N" chip, not three chips with two zeros.
+    /// </summary>
+    public Visibility InsertedChipVisibility => InsertedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility DeletedChipVisibility => DeletedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ModifiedChipVisibility => ModifiedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>True if at least one line differs between the two sides.</summary>
+    public bool HasAnyChanges => InsertedCount > 0 || DeletedCount > 0 || ModifiedCount > 0;
+
+    /// <summary>
+    /// Inverse of <see cref="HasAnyChanges"/>, exposed as Visibility so the
+    /// "тексти ідентичні" hint badge in the XAML can bind directly.
+    /// </summary>
+    public Visibility IsIdentical => HasAnyChanges ? Visibility.Collapsed : Visibility.Visible;
 
     /// <summary>
     /// View-mode flag: <c>false</c> shows the side-by-side diff (read-only,
