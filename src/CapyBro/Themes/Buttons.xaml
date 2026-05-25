@@ -31,7 +31,7 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceLayer1Brush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnSurfaceStrongBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderThickness" Value="2" />
     <Setter Property="MinHeight" Value="32" />
     <Setter Property="Padding" Value="12,6" />
     <Setter Property="FontFamily" Value="{DynamicResource FontPrimary}" />
@@ -84,7 +84,6 @@
             </Trigger>
             <Trigger Property="IsKeyboardFocused" Value="True">
               <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource BorderFocusBrush}" />
-              <Setter TargetName="Root" Property="BorderThickness" Value="2" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
@@ -100,8 +99,8 @@
   <Style x:Key="ButtonPrimary" TargetType="Button">
     <Setter Property="Background" Value="{DynamicResource BrandPrimaryBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnSurfaceInvertedBrush}" />
-    <Setter Property="BorderBrush" Value="{x:Null}" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2" />
     <Setter Property="MinHeight" Value="40" />
     <Setter Property="Padding" Value="20,10" />
     <Setter Property="FontFamily" Value="{DynamicResource FontPrimary}" />
@@ -157,7 +156,6 @@
                    on the same Border. The "outer with offset" treatment
                    is a layout refinement deferred to Phase D task 16. -->
               <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource BorderFocusBrush}" />
-              <Setter TargetName="Root" Property="BorderThickness" Value="2" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <!-- Spec'd disabled bg was BorderSubtle, but in the dark
@@ -186,8 +184,8 @@
   <Style x:Key="ButtonDestructive" TargetType="Button">
     <Setter Property="Background" Value="{DynamicResource StatusErrorBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnSurfaceInvertedBrush}" />
-    <Setter Property="BorderBrush" Value="{x:Null}" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2" />
     <Setter Property="MinHeight" Value="40" />
     <Setter Property="Padding" Value="20,10" />
     <Setter Property="FontFamily" Value="{DynamicResource FontPrimary}" />
@@ -241,7 +239,6 @@
             </Trigger>
             <Trigger Property="IsKeyboardFocused" Value="True">
               <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource BorderFocusBrush}" />
-              <Setter TargetName="Root" Property="BorderThickness" Value="2" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter TargetName="Root" Property="Background" Value="{DynamicResource BorderSubtleBrush}" />
@@ -268,7 +265,7 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceLayer1Brush}" />
     <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDefaultBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderThickness" Value="2" />
     <Setter Property="Width" Value="32" />
     <Setter Property="Height" Value="32" />
     <Setter Property="Padding" Value="0" />
@@ -319,7 +316,6 @@
             </Trigger>
             <Trigger Property="IsKeyboardFocused" Value="True">
               <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource BorderFocusBrush}" />
-              <Setter TargetName="Root" Property="BorderThickness" Value="2" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Foreground" Value="{DynamicResource OnSurfaceDisabledBrush}" />
