@@ -397,7 +397,7 @@ Pro-версія (з статистикою, експортом, switch-model х
 ---
 
 <div align="center">
-Made with ❤ і капібара-vibes through <a href="https://docs.claude.com/en/docs/claude-code/overview">Claude Code</a>.
+© 2026 CapyBro. Made in Ukraine with warmth.
 <br>
 <a href="https://capybro.app">capybro.app</a>
 </div>
