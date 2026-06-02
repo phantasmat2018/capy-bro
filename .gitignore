@@ -7,7 +7,7 @@
 *.suo
 *.userosscache
 *.sln.docstates
-# IDE configs — not used in this project (Claude Code workflow only)
+# IDE configs
 .vs/
 .vscode/
 .idea/

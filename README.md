@@ -9,7 +9,6 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://learn.microsoft.com/en-us/dotnet/)
 [![Version](https://img.shields.io/badge/version-2.0.0-success?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#-ліцензія)
-[![Built with](https://img.shields.io/badge/built%20with-Claude%20Code-cc785c?style=flat-square)](https://docs.claude.com/en/docs/claude-code/overview)
 
 [capybro.app](https://capybro.app) · [Документація](https://capybro.app/uk/docs/) · [Скачати](https://github.com/phantasmat2018/capy-bro/releases) · [Купити Pro — $19](https://capybro.app/#pricing)
 
