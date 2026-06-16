@@ -149,6 +149,14 @@ Pro — одноразова покупка $19 на [capybro.app](https://capyb
   <img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft Store" width="220" />
 </a>
 
+#### 📦 Або через winget
+
+Один рядок у PowerShell або терміналі — winget завантажить і встановить сам:
+
+```powershell
+winget install RomanTykhonenko.CapyBro
+```
+
 #### 💾 Або `.exe`-інсталятор з GitHub Releases
 
 Скачайте файл `CapyBro-Setup-2.0.0.exe` (~49 MB) з [GitHub Releases](https://github.com/phantasmat2018/capy-bro/releases) або з [capybro.app](https://capybro.app). Інсталятор per-user — НЕ потребує адмін-прав, ставить у `%LOCALAPPDATA%\CapyBro\`.
