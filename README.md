@@ -7,10 +7,10 @@
 [![Website](https://img.shields.io/badge/website-capybro.app-2563eb?style=flat-square)](https://capybro.app)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4?style=flat-square)](#-установка-для-користувачів)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://learn.microsoft.com/en-us/dotnet/)
-[![Version](https://img.shields.io/badge/version-2.0.0-success?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-2.0.2-success?style=flat-square)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#-ліцензія)
 
-[capybro.app](https://capybro.app) · [Документація](https://capybro.app/uk/docs/) · [Скачати](https://github.com/phantasmat2018/capy-bro/releases) · [Купити Pro — $19](https://capybro.app/#pricing)
+[capybro.app](https://capybro.app) · [Документація](https://capybro.app/uk/docs/) · [Скачати](https://github.com/phantasmat2018/capy-bro/releases) · [Купити Pro — $9](https://capybro.app/#pricing)
 
 <a href="https://apps.microsoft.com/detail/9N73FHJTW3M7">
   <img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft Store" width="220" />
@@ -107,7 +107,7 @@
 
 ## 💎 Що дає Pro
 
-Pro — одноразова покупка $19 на [capybro.app](https://capybro.app/#pricing), розблоковує 5 фіч поверх Free:
+Pro — одноразова покупка $9 на [capybro.app](https://capybro.app/#pricing), розблоковує 5 фіч поверх Free:
 
 | Pro-фіча | Що робить |
 |---|---|
@@ -117,7 +117,7 @@ Pro — одноразова покупка $19 на [capybro.app](https://capyb
 | 📦 **Premium Prompt Packs** | 5 курованих наборів × ~10 промтів (Legal / Marketing / Academic / Code Review / Business). Trilingual |
 | 📤 **Експорт історії** | CSV / JSON експорт усіх 50 записів історії |
 
-Купити: [capybro.app/#pricing](https://capybro.app/#pricing). Одноразова покупка через Gumroad ($19). 3 пристрої на ключ. 14 днів гарантії повернення коштів.
+Купити: [capybro.app/#pricing](https://capybro.app/#pricing). Одноразова покупка через Gumroad ($9). 1 пристрій на ключ. 14 днів гарантії повернення коштів.
 
 ---
 
@@ -143,7 +143,7 @@ Pro — одноразова покупка $19 на [capybro.app](https://capyb
 
 #### 🏪 Microsoft Store (рекомендовано)
 
-Підписана збірка, автоматичні оновлення через Windows Update, нативна підтримка x64 + ARM64. Поточна версія у Store — 2.0.1 з autostart-фіксом.
+Підписана збірка, автоматичні оновлення через Windows Update, нативна підтримка x64 + ARM64. Поточна версія у Store — 2.0.2.
 
 <a href="https://apps.microsoft.com/detail/9N73FHJTW3M7">
   <img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft Store" width="220" />
@@ -159,7 +159,7 @@ winget install RomanTykhonenko.CapyBro
 
 #### 💾 Або `.exe`-інсталятор з GitHub Releases
 
-Скачайте файл `CapyBro-Setup-2.0.0.exe` (~49 MB) з [GitHub Releases](https://github.com/phantasmat2018/capy-bro/releases) або з [capybro.app](https://capybro.app). Інсталятор per-user — НЕ потребує адмін-прав, ставить у `%LOCALAPPDATA%\CapyBro\`.
+Скачайте файл `CapyBro-Setup-2.0.2.exe` (~48 MB) з [GitHub Releases](https://github.com/phantasmat2018/capy-bro/releases) або з [capybro.app](https://capybro.app). Інсталятор per-user — НЕ потребує адмін-прав, ставить у `%LOCALAPPDATA%\CapyBro\`.
 
 > **SmartScreen попередження** (тільки для `.exe`-маршруту): інсталятор зараз непідписаний, тому Windows покаже "Невідомий видавець". Натисніть "Додатково" → "Все одно виконати". У Microsoft Store-збірці цього вікна немає — Microsoft підписує її своїм сертифікатом.
 
@@ -203,7 +203,7 @@ Sidebar з вкладками:
 | ✏️ | **Промти** (Prompts) | Завжди |
 | 🕐 | **Історія** (History) | Якщо `ExperimentalHistory=true` (за замовчуванням так) |
 
-У footer-і sidebar: `v2.0.0 · capybro.app` (клікабельний) + (якщо Ollama) outline-pill `Ollama`.
+У footer-і sidebar: `v2.0.2 · capybro.app` (клікабельний) + (якщо Ollama) outline-pill `Ollama`.
 
 ---
 
@@ -327,7 +327,7 @@ dotnet publish src/CapyBro -c Release -r win-x64 --self-contained -p:PublishRead
 
 # NSIS installer (потрібен makensis у PATH або у `Program Files (x86)\NSIS\Bin\`)
 & "C:\Program Files (x86)\NSIS\Bin\makensis.exe" installer\installer.nsi
-# → installer/CapyBro-Setup-2.0.0.exe
+# → installer/CapyBro-Setup-2.0.2.exe
 ```
 
 ### Quality gate
